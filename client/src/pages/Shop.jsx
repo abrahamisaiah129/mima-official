@@ -4,6 +4,7 @@ import Filter from "../components/Filter";
 import Sort from "../components/Sort";
 import ProductGrid from "../components/ProductGrid";
 import { products as allProducts } from "../data/products";
+import { smartSearch } from "../utils/search";
 
 const Shop = ({ addToCart }) => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -11,14 +12,14 @@ const Shop = ({ addToCart }) => {
   const searchQuery = searchParams.get("search") || "";
 
   const [selectedCategory, setSelectedCategory] = useState(
-    categoryParam || "All"
+    categoryParam || "All",
   );
   const [priceRange, setPriceRange] = useState(300000);
 
   // Derive unique categories from data
   const categories = useMemo(
     () => ["All", ...new Set(allProducts.map((p) => p.category))],
-    []
+    [],
   );
 
   // Sync state with URL param
@@ -32,15 +33,24 @@ const Shop = ({ addToCart }) => {
   };
 
   // Filter products based on category and price
-  const filteredProducts = allProducts.filter((product) => {
-    const matchesCategory =
-      selectedCategory === "All" || product.category === selectedCategory;
-    const matchesPrice = product.price <= priceRange;
-    const matchesSearch =
-      product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesPrice && matchesSearch;
-  });
+  const filteredProducts = useMemo(() => {
+    let result = allProducts;
+
+    // 1. Filter by Category
+    if (selectedCategory !== "All") {
+      result = result.filter((p) => p.category === selectedCategory);
+    }
+
+    // 2. Filter by Price
+    result = result.filter((p) => p.price <= priceRange);
+
+    // 3. Smart Search (Deep & Fuzzy)
+    if (searchQuery) {
+      result = smartSearch(result, searchQuery);
+    }
+
+    return result;
+  }, [selectedCategory, priceRange, searchQuery]);
 
   return (
     <div className="flex flex-col md:flex-row gap-8 py-8 animate-fade-in">
@@ -58,12 +68,12 @@ const Shop = ({ addToCart }) => {
       {/* Main Grid */}
       <div className="flex-grow">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-black text-slate-900 uppercase">
+          <h1 className="text-2xl font-black text-white uppercase">
             {searchQuery
               ? `Search results for "${searchQuery}"`
               : selectedCategory === "All"
-              ? "Shop All"
-              : `${selectedCategory} Collection`}
+                ? "Shop All"
+                : `${selectedCategory} Collection`}
           </h1>
           <Sort />
         </div>

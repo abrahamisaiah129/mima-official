@@ -8,6 +8,7 @@ import {
 // import { ShoppingBag, User, Search, Menu, X, Wallet } from "lucide-react";
 import LOGO from "../assets/MIMA(cropped).png";
 import { products } from "../data/products";
+import { smartSearch } from "../utils/search"; // Import smart search util
 // Inline icons to resolve "Objects are not valid as a React child" error caused by duplicate React instances
 const IconWrapper = ({
   size = 24,
@@ -110,8 +111,36 @@ const Navbar = ({ cartCount = 0 }) => {
     return currentCategory === category;
   };
 
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = React.useRef(0);
+
+  // Smart Scroll Logic - Optimized
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Determine direction
+      // If scrolling DOWN and we are past the 100px mark -> Hide
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setIsVisible(false);
+      } else {
+        // Scrolling UP -> Show
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="fixed w-full top-0 z-50">
+    <header
+      className={`fixed w-full top-0 z-50 transition-transform duration-300 ease-in-out ${
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -124,19 +153,19 @@ const Navbar = ({ cartCount = 0 }) => {
         .delay-300 { animation-delay: 0.3s; }
       `}</style>
       {/* 1. Top Bar - "Slay on a Budget" Tagline */}
-      <div className="bg-red-600 text-white text-xs font-bold tracking-[0.2em] text-center py-2 uppercase">
+      <div className="bg-zinc-900 text-white/80 text-xs font-bold tracking-[0.2em] text-center py-2 uppercase border-b border-zinc-800">
         Slay on a Budget with MIMA
       </div>
 
       {/* 2. Main Navigation Bar */}
-      <nav className="bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
+      <nav className="bg-black/90 backdrop-blur-md border-b border-zinc-800 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Mobile Menu Button */}
             <div className="flex items-center md:hidden">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-slate-800 hover:text-red-600 transition"
+                className="text-white hover:text-gray-300 transition"
               >
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -149,9 +178,9 @@ const Navbar = ({ cartCount = 0 }) => {
             >
               {/* Replace this text with your generated Logo Image if preferred */}
               <img
-                src={LOGO}
+                src="/MIMA-LOGO-PLACEHOLDER.png"
                 alt="MIMA Logo"
-                className="h-12 w-auto object-contain"
+                className="h-12 w-auto object-contain filter invert brightness-0"
               />
             </Link>
 
@@ -161,8 +190,8 @@ const Navbar = ({ cartCount = 0 }) => {
                 to="/"
                 className={`transition-colors ${
                   location.pathname === "/"
-                    ? "text-red-600"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "text-white"
+                    : "text-gray-400 hover:text-white"
                 }`}
               >
                 <Home size={20} />
@@ -171,10 +200,10 @@ const Navbar = ({ cartCount = 0 }) => {
                 <Link
                   key={item}
                   to={`/shop?category=${item}`}
-                  className={`text-sm font-medium hover:underline underline-offset-4 decoration-red-500 transition-all duration-300 uppercase tracking-wide ${
+                  className={`text-sm font-medium hover:underline underline-offset-4 decoration-white/50 transition-all duration-300 uppercase tracking-wide ${
                     isCategoryActive(item)
-                      ? "text-red-600 font-bold"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "text-white font-bold"
+                      : "text-gray-400 hover:text-white"
                   }`}
                 >
                   {item}
@@ -194,26 +223,68 @@ const Navbar = ({ cartCount = 0 }) => {
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-4 pr-10 py-2 rounded-full bg-gray-100 border-transparent focus:bg-white focus:border-red-200 focus:ring-2 focus:ring-red-100 text-sm w-40 focus:w-64 transition-all duration-300 outline-none"
+                  className="pl-4 pr-10 py-2 rounded-full bg-white/5 border-white/10 border focus:bg-black focus:border-white/30 focus:ring-1 focus:ring-white/30 text-sm w-40 focus:w-64 transition-all duration-300 outline-none text-white placeholder-gray-500 backdrop-blur-sm"
                 />
                 <button
                   type="submit"
-                  className="absolute right-3 text-slate-400 hover:text-red-600 transition"
+                  className="absolute right-3 text-slate-400 hover:text-white transition"
                 >
                   <Search size={18} strokeWidth={2} />
                 </button>
+                {/* Live Search Results */}
+                {searchQuery && (
+                  <div className="absolute top-full left-0 w-80 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl mt-4 overflow-hidden z-50 animate-slide-up">
+                    <div className="p-4">
+                      <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                        Products
+                      </h4>
+                      {smartSearch(products, searchQuery).length > 0 ? (
+                        <div className="space-y-3">
+                          {smartSearch(products, searchQuery)
+                            .slice(0, 3)
+                            .map((product) => (
+                              <Link
+                                key={product.id}
+                                to={`/product/${product.id}`}
+                                onClick={() => setSearchQuery("")} // Close on click
+                                className="flex items-center gap-3 group hover:bg-white/5 p-2 rounded-xl transition"
+                              >
+                                <img
+                                  src={product.imageSrc}
+                                  alt={product.title}
+                                  className="w-12 h-12 rounded-lg object-cover"
+                                />
+                                <div>
+                                  <span className="text-sm font-bold text-white block group-hover:text-gray-300 transition">
+                                    {product.title}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    ₦{product.price.toLocaleString()}
+                                  </span>
+                                </div>
+                              </Link>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="text-gray-500 text-sm italic py-2">
+                          No items found.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </form>
 
               {/* WALLET COMPONENT - The Key Feature */}
               <Link
                 to="/wallet"
-                className="hidden sm:flex items-center bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200 cursor-pointer hover:border-red-300 transition group"
+                className="hidden sm:flex items-center bg-white/5 px-3 py-1.5 rounded-full border border-white/10 cursor-pointer hover:bg-white/10 transition group backdrop-blur-sm"
               >
                 <Wallet
                   size={16}
-                  className="text-slate-400 group-hover:text-red-500 transition mr-2"
+                  className="text-gray-400 group-hover:text-white transition mr-2"
                 />
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-sm font-semibold text-white">
                   ₦{walletBalance.toLocaleString()}
                 </span>
               </Link>
@@ -221,7 +292,7 @@ const Navbar = ({ cartCount = 0 }) => {
               {/* Profile Icon */}
               <Link
                 to="/profile"
-                className="text-slate-600 hover:text-slate-900 transition"
+                className="text-gray-400 hover:text-white transition"
               >
                 <User size={22} strokeWidth={1.5} />
               </Link>
@@ -231,10 +302,10 @@ const Navbar = ({ cartCount = 0 }) => {
                 <ShoppingBag
                   size={22}
                   strokeWidth={1.5}
-                  className="text-slate-600 group-hover:text-slate-900 transition"
+                  className="text-gray-400 group-hover:text-white transition"
                 />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
+                  <span className="absolute -top-1 -right-1 bg-white text-black text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full">
                     {cartCount}
                   </span>
                 )}
@@ -245,14 +316,14 @@ const Navbar = ({ cartCount = 0 }) => {
 
         {/* Mobile Navigation Menu (Slide down) */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white border-t border-gray-100 animate-slide-down origin-top shadow-xl">
+          <div className="md:hidden bg-black border-t border-zinc-800 animate-slide-down origin-top shadow-xl">
             <div className="px-4 pt-2 pb-6 space-y-1">
               {/* Mobile Wallet View */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4 border border-gray-100">
+              <div className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg mb-4 border border-zinc-800">
                 <span className="text-sm font-medium text-gray-500">
                   My Wallet Balance
                 </span>
-                <span className="text-base font-bold text-slate-900">
+                <span className="text-base font-bold text-white">
                   ₦{walletBalance.toLocaleString()}
                 </span>
               </div>
@@ -262,8 +333,8 @@ const Navbar = ({ cartCount = 0 }) => {
                 onClick={() => setIsMenuOpen(false)}
                 className={`block px-3 py-3 text-base font-medium rounded-md transition ${
                   location.pathname === "/"
-                    ? "text-red-600 bg-red-50"
-                    : "text-slate-600 hover:text-red-600 hover:bg-gray-50"
+                    ? "text-white bg-zinc-900"
+                    : "text-gray-400 hover:text-white hover:bg-zinc-900"
                 }`}
               >
                 Home
@@ -276,8 +347,8 @@ const Navbar = ({ cartCount = 0 }) => {
                   onClick={() => setIsMenuOpen(false)}
                   className={`block px-3 py-3 text-base font-medium rounded-md transition ${
                     isCategoryActive(item)
-                      ? "text-red-600 bg-red-50"
-                      : "text-slate-600 hover:text-red-600 hover:bg-gray-50"
+                      ? "text-white bg-zinc-900"
+                      : "text-gray-400 hover:text-white hover:bg-zinc-900"
                   }`}
                 >
                   {item}

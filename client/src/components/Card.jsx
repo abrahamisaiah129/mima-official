@@ -45,75 +45,66 @@ const Card = ({
   };
 
   return (
-    <div className="bg-white rounded-4xl shadow-xl overflow-hidden max-w-sm w-full transition-transform hover:-translate-y-2 duration-300 border border-gray-100 relative group">
+    <div className="bg-black/40 backdrop-blur-md rounded-3xl shadow-xl overflow-hidden w-full max-w-[280px] transition-transform hover:-translate-y-1 duration-300 border border-white/10 relative group mx-auto">
       {/* Top Decorative Arc (Matches the card style) */}
-      <div className="absolute top-0 left-0 w-full h-2 bg-red-600" />
 
-      <div className="p-6 pb-8 flex flex-col space-y-6">
-        {/* 1. Header Text */}
+      <Link
+        to={`/product/${id}`}
+        className="relative block w-full aspect-[4/5] overflow-hidden bg-zinc-800"
+      >
+        <img
+          src={imageSrc}
+          alt={title}
+          className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
+        />
+        {/* Rating Badge - Absolute Top Right */}
+        <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full flex items-center space-x-1 border border-white/10">
+          <Star size={10} className="text-yellow-400 fill-yellow-400" />
+          <span className="text-[10px] font-bold text-white">{rating}.0</span>
+        </div>
+      </Link>
+
+      {/* Content Container - Compact & Clean */}
+      <div className="p-5 flex flex-col gap-4">
+        {/* Header */}
         <Link
           to={`/product/${id}`}
-          className="text-center space-y-2 mt-2 block hover:opacity-80 transition"
+          className="block text-center hover:opacity-80 transition"
         >
-          <h3 className="text-xl font-black text-red-600 uppercase tracking-tight">
+          <h3 className="text-base font-bold text-white uppercase tracking-wider mb-1 truncate">
             {title}
           </h3>
-          <p className="text-xs text-gray-500 font-medium leading-relaxed px-2 line-clamp-2">
+          <p className="text-[10px] text-gray-500 font-medium leading-tight line-clamp-1 px-4">
             {description}
           </p>
         </Link>
 
-        {/* 2. Product Image */}
-        <Link
-          to={`/product/${id}`}
-          className="relative h-48 w-full overflow-hidden rounded-2xl bg-gray-50 group-hover:shadow-inner transition-shadow block"
-        >
-          <img
-            src={imageSrc}
-            alt={title}
-
-            className="w-full h-full object-cover object-center mix-blend-multiply"
-          />
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1.5 rounded-xl flex items-center space-x-0.5 shadow-sm border border-gray-100">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                size={12}
-                className={
-                  i < rating
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-gray-200 fill-gray-200"
-                }
-              />
-            ))}
-          </div>
-        </Link>
-
-        {/* 3. Price */}
-        <div className="flex items-center px-1">
-          <span className="text-3xl font-black text-slate-900">
-            ₦{(price * quantity).toLocaleString()}
+        {/* Price - Centered & Elegant */}
+        <div className="flex justify-center items-baseline space-x-1 border-b border-white/5 pb-4">
+          <span className="text-xs text-gray-400 font-medium">NGN</span>
+          <span className="text-xl font-black text-white tracking-tight">
+            {(price * quantity).toLocaleString()}
           </span>
         </div>
 
         {/* 4. Size & Quantity Row */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-          {/* Size Selector */}
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+        {/* Size & Qty - Grid Layout */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Size Dropdown-like */}
+          <div className="space-y-1">
+            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block text-center">
               Size
             </span>
-            <div className="flex items-center space-x-1">
-              {sizes.map((size) => (
+            <div className="flex flex-wrap justify-center gap-1">
+              {sizes.slice(0, 3).map((size) => (
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`w-7 h-7 flex items-center justify-center text-[10px] font-bold rounded transition-all
-                    ${
-                      selectedSize === size
-                        ? "bg-slate-900 text-white shadow-md"
-                        : "text-gray-400 hover:text-slate-700 hover:bg-gray-100"
-                    }`}
+                  className={`h-6 w-6 flex items-center justify-center text-[10px] font-bold rounded-full transition-all border ${
+                    selectedSize === size
+                      ? "bg-white text-black border-white"
+                      : "text-gray-400 border-white/10 hover:border-white"
+                  }`}
                 >
                   {size}
                 </button>
@@ -121,69 +112,39 @@ const Card = ({
             </div>
           </div>
 
-          {/* Quantity Counter */}
-          <div className="space-y-2 flex flex-col items-end">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          {/* Quantity */}
+          <div className="space-y-1">
+            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest block text-center">
               Qty
             </span>
-            <div className="flex items-center bg-gray-50 rounded-lg p-1">
+            <div className="flex items-center justify-center bg-white/5 rounded-full px-2 py-1 border border-white/10 w-fit mx-auto">
               <button
                 onClick={handleDecrement}
                 disabled={quantity <= 1}
-                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-50 transition"
+                className="p-1 hover:text-white text-gray-400 transition disabled:opacity-30"
               >
-                <Minus size={14} strokeWidth={3} />
+                <Minus size={10} />
               </button>
-              <span className="w-6 text-center text-sm font-bold text-slate-900">
+              <span className="text-[10px] font-bold text-white w-4 text-center">
                 {quantity}
               </span>
               <button
                 onClick={handleIncrement}
-                className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 transition"
+                className="p-1 hover:text-white text-gray-400 transition"
               >
-                <Plus size={14} strokeWidth={3} />
+                <Plus size={10} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* 5. Color Selector */}
-        <div className="space-y-2">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-            Colors
-          </span>
-          <div className="flex items-center space-x-3">
-            {colors.map((color) => (
-              <button
-                key={color.hex}
-                onClick={() => setSelectedColor(color.hex)}
-                style={{ backgroundColor: color.hex }}
-                className={`w-6 h-6 rounded-full flex items-center justify-center transition-transform shadow-sm
-                  ${
-                    selectedColor === color.hex
-                      ? "ring-2 ring-offset-2 ring-gray-300 scale-110"
-                      : "hover:scale-110"
-                  }`}
-                title={color.name}
-              >
-                {selectedColor === color.hex && (
-                  <Check
-                    size={12}
-                    className="text-white drop-shadow-md"
-                    strokeWidth={4}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* 6. Action Button */}
+        {/* Action Button - Sleek */}
         <button
           onClick={handleAddToCart}
-          className="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-4 rounded-xl uppercase tracking-widest shadow-lg shadow-red-200 hover:shadow-red-300 transition-all active:scale-95 mt-2"
+          className="w-full bg-white hover:bg-gray-200 text-black text-xs font-black py-3 rounded-full uppercase tracking-[0.15em] transition-all active:scale-95"
         >
-          Add to Cart
+          Add to Bag
         </button>
       </div>
     </div>

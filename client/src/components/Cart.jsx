@@ -14,10 +14,10 @@ const Cart = ({ cartItems, removeFromCart, updateQuantity }) => {
   if (cartItems.length === 0) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400">
+        <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400">
           <ShoppingBag size={32} />
         </div>
-        <h2 className="text-2xl font-black text-slate-900 mb-4">
+        <h2 className="text-2xl font-black text-white mb-4">
           Your Bag is Empty
         </h2>
         <p className="text-gray-500 mb-8">
@@ -25,7 +25,7 @@ const Cart = ({ cartItems, removeFromCart, updateQuantity }) => {
         </p>
         <Link
           to="/shop"
-          className="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest"
+          className="bg-white text-black px-8 py-3 rounded-xl font-bold uppercase tracking-widest hover:bg-gray-200 transition"
         >
           Start Shopping
         </Link>
@@ -36,13 +36,10 @@ const Cart = ({ cartItems, removeFromCart, updateQuantity }) => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="flex items-center space-x-2 mb-8">
-        <Link
-          to="/shop"
-          className="text-gray-400 hover:text-slate-900 transition"
-        >
+        <Link to="/shop" className="text-gray-400 hover:text-white transition">
           <ArrowLeft size={24} />
         </Link>
-        <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+        <h1 className="text-2xl font-black text-white uppercase tracking-tight">
           Your Bag ({cartItems.length})
         </h1>
       </div>

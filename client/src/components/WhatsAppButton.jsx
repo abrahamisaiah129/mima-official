@@ -4,11 +4,11 @@ import { MessageCircle, X, Send, Smile } from "lucide-react";
 const WhatsAppButton = () => {
   // --- CONFIGURATION ---
   const PHONE_NUMBER = "2348000000000"; // Your WhatsApp number (No +)
-  const BRAND_NAME = "MIMA Footwear";
+  const BRAND_NAME = "MIMA Support Bot";
   const AVATAR_URL =
-    "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=100&auto=format&fit=crop"; // Your logo
+    "https://api.dicebear.com/9.x/bottts-neutral/svg?seed=MimaSupport&backgroundColor=18181b"; // Robot Avatar
   const WELCOME_MESSAGE =
-    "Hi, welcome to MIMA! How can we help you slay on a budget today? 🙂";
+    "Hello Gorgeous! 🤖 Welcome to MIMA. I'm your virtual assistant. How can I help you pick the perfect pair today?";
   // ---------------------
 
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +37,7 @@ const WhatsAppButton = () => {
 
     // Open WhatsApp with the user's message
     const url = `https://wa.me/${PHONE_NUMBER}?text=${encodeURIComponent(
-      userMessage
+      userMessage,
     )}`;
     window.open(url, "_blank");
     setUserMessage(""); // Clear input
@@ -49,7 +49,7 @@ const WhatsAppButton = () => {
       {isOpen && (
         <div className="mb-4 w-[350px] bg-[#E5DDD5] rounded-[20px] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 fade-in duration-300 border border-gray-100">
           {/* Header */}
-          <div className="bg-red-700 p-4 flex items-center justify-between text-white">
+          <div className="bg-black p-4 flex items-center justify-between text-white border-b border-white/10">
             <div className="flex items-center space-x-3">
               <div className="relative">
                 <img
@@ -100,7 +100,7 @@ const WhatsAppButton = () => {
               <p className="font-bold text-[10px] text-orange-400 mb-1">
                 {BRAND_NAME}
               </p>
-              
+
               {isTyping ? (
                 <div className="flex space-x-1 items-center h-5 px-1">
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
@@ -151,13 +151,17 @@ const WhatsAppButton = () => {
       {/* --- FLOATING TOGGLE BUTTON --- */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center justify-center group relative"
+        className="bg-black/80 backdrop-blur-md border border-white/20 hover:bg-white hover:text-black hover:border-black text-white p-4 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 flex items-center justify-center group relative"
       >
-        {isOpen ? <X size={28} /> : <MessageCircle size={28} fill="white" />}
+        {isOpen ? (
+          <X size={28} />
+        ) : (
+          <MessageCircle size={28} className="fill-current" />
+        )}
 
         {/* Tooltip */}
         {!isOpen && (
-          <span className="absolute right-full mr-3 bg-slate-800 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+          <span className="absolute right-full mr-3 bg-white/10 backdrop-blur-md border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             Chat with us
           </span>
         )}

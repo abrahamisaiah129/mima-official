@@ -8,7 +8,7 @@ const Sort = () => {
         Sort by:
       </span>
       <div className="relative">
-        <select className="appearance-none bg-gray-50 border border-gray-200 text-slate-900 text-sm font-bold rounded-xl pl-4 pr-10 py-3 focus:outline-none focus:border-slate-900 cursor-pointer transition">
+        <select className="appearance-none bg-zinc-900 border border-zinc-800 text-white text-sm font-bold rounded-xl pl-4 pr-10 py-3 focus:outline-none focus:border-white cursor-pointer transition">
           <option>Newest Arrivals</option>
           <option>Price: Low to High</option>
           <option>Price: High to Low</option>

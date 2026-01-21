@@ -14,9 +14,24 @@ import CheckoutForm from "./components/CheckoutForm";
 import WhatsAppButton from "./components/WhatsAppButton"; // Updated import name
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
+import AdminLogin from "./pages/Admin/Login";
+import AdminDashboard from "./pages/Admin/Dashboard";
+import TrackOrder from "./pages/TrackOrder";
 
 function App() {
   const [cartItems, setCartItems] = useState([]);
+  const [wishlistItems, setWishlistItems] = useState([]);
+
+  // Wishlist Logic
+  const toggleWishlist = (product) => {
+    setWishlistItems((prev) => {
+      const exists = prev.find((item) => item.id === product.id);
+      if (exists) {
+        return prev.filter((item) => item.id !== product.id);
+      }
+      return [...prev, product];
+    });
+  };
 
   // Enhanced Add to Cart (Checks for duplicates with same ID + Size + Color)
   const addToCart = (product) => {
@@ -68,8 +83,11 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-white font-sans text-slate-900">
-        <Navbar cartCount={cartItems.length} />
+      <div className="min-h-screen flex flex-col bg-black font-sans text-white">
+        <Navbar
+          cartCount={cartItems.length}
+          wishlistCount={wishlistItems.length}
+        />
 
         <main className="grow pt-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
           <Routes>
@@ -77,7 +95,13 @@ function App() {
             <Route path="/shop" element={<Shop addToCart={addToCart} />} />
             <Route
               path="/product/:id"
-              element={<ProductDetails addToCart={addToCart} />}
+              element={
+                <ProductDetails
+                  addToCart={addToCart}
+                  wishlistItems={wishlistItems}
+                  toggleWishlist={toggleWishlist}
+                />
+              }
             />
             <Route
               path="/cart"
@@ -95,6 +119,12 @@ function App() {
             <Route path="/login" element={<LoginForm />} />
             <Route path="/register" element={<RegisterForm />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/track-order" element={<TrackOrder />} />
+
+            {/* ADMIN ROUTES */}
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Routes>
         </main>
 
