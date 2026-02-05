@@ -32,7 +32,7 @@ const CartItem = ({ item, removeFromCart, updateQuantity }) => {
       {/* Actions */}
       <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-6 mt-0 sm:mt-0">
         {/* Quantity Controls - Mobile optimized (smaller) or hidden? Keeping it but compact */}
-        <div className="flex items-center bg-gray-50 rounded-lg p-1 sm:p-1">
+        <div className="flex items-center bg-gray-50 rounded-lg p-1 sm:p-1 gap-3">
           <button
             onClick={() =>
               updateQuantity(item.id, item.selectedSize, item.selectedColor, -1)
@@ -59,7 +59,7 @@ const CartItem = ({ item, removeFromCart, updateQuantity }) => {
           onClick={() =>
             removeFromCart(item.id, item.selectedSize, item.selectedColor)
           }
-          className="text-gray-300 hover:text-red-600 transition absolute top-0 right-0 p-2 sm:p-0 sm:static sm:block"
+          className="text-gray-300 hover:text-red-600 transition absolute top-2 right-2 p-2 sm:p-0 sm:static sm:block"
         >
           <Trash2 size={20} className="sm:w-5 sm:h-5" />
         </button>

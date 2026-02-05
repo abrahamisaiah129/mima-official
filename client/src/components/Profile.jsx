@@ -5,6 +5,7 @@ import { parsePhoneNumber } from "libphonenumber-js";
 
 const Profile = () => {
   const [country, setCountry] = useState("Loading...");
+  const [isSubscribed, setIsSubscribed] = useState(profile.subscribed);
 
   useEffect(() => {
     try {
@@ -135,12 +136,15 @@ const Profile = () => {
               Newsletter
             </label>
             <div className="relative">
-              <div className="flex items-center space-x-3 w-full pl-4 pr-4 py-3 bg-black border border-white/10 rounded-xl">
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${profile.subscribed ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
-                  {profile.subscribed && <Check size={14} className="text-black stroke-3" />}
+              <div
+                onClick={() => setIsSubscribed(!isSubscribed)}
+                className="flex items-center space-x-3 w-full pl-4 pr-4 py-3 bg-black border border-white/10 rounded-xl cursor-pointer hover:bg-zinc-900 transition-colors select-none"
+              >
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSubscribed ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
+                  {isSubscribed && <Check size={14} className="text-black stroke-3" />}
                 </div>
                 <span className="text-white font-bold">
-                  {profile.subscribed ? "Subscribed to Don't Miss the Drop" : "Not Subscribed"}
+                  {isSubscribed ? "Subscribed to Don't Miss the Drop" : "Not Subscribed"}
                 </span>
               </div>
             </div>
