@@ -12,6 +12,11 @@ export const UserProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem("MIMA_TOKEN"));
 
     const loadUser = async () => {
+        const storedToken = localStorage.getItem("MIMA_TOKEN");
+        if (!storedToken) {
+            setUser(null);
+            return;
+        }
         try {
             const res = await api.get('/auth/me');
             setUser(res.data);
