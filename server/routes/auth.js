@@ -24,7 +24,7 @@ router.get('/me', auth, async (req, res) => {
 // REGISTER
 router.post('/register', async (req, res) => {
     try {
-        const { email, password, firstName, lastName } = req.body;
+        const { email, password, firstName, lastName, phone, address } = req.body;
 
         let user = await User.findOne({ email });
         if (user) {
@@ -35,7 +35,9 @@ router.post('/register', async (req, res) => {
             email,
             password,
             firstName,
-            lastName
+            lastName,
+            phone,
+            address
         });
 
         const salt = await bcrypt.genSalt(10);

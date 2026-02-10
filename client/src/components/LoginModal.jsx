@@ -42,7 +42,7 @@ const AuthModal = ({ onClose, onFundRequest }) => {
         setLoading(true);
         setError("");
 
-        const userData = { email, password, firstname, lastname, address, phone };
+        const userData = { email, password, firstName: firstname, lastName: lastname, address, phone };
         const res = await register(userData);
 
         if (res.success) {

@@ -408,7 +408,7 @@ const Navbar = () => {
                     </Link>
 
                     <div className="flex items-center justify-between px-3 py-3 border-b border-white/5 mb-2">
-                      <span className="text-gray-400 text-sm">Hello, {user.firstname}</span>
+                      <span className="text-gray-400 text-sm">Hello, {user.firstName}</span>
                     </div>
                   </>
                 ) : (
