@@ -48,7 +48,7 @@ app.use('/admins', adminRoutes);
 app.use('/banners', bannerRoutes);
 app.use('/categories', categoryRoutes);
 app.use('/posts', postRoutes);
-app.use('/', passwordRoutes);
+app.use('/password', passwordRoutes);
 
 // Newsletter needs special handling for singular/plural compatibility
 // GET /newsletters -> list
