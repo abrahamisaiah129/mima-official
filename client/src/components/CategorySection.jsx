@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
-
-import { categories } from "../data/pagedata";
+import api from "../api";
 
 const CategorySection = () => {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    api.get('/categories')
+      .then(res => setCategories(res.data))
+      .catch(err => console.error("Failed to load categories", err));
+  }, []);
+
   return (
     <section className="mb-24">
       <div className="flex items-end justify-between mb-10">

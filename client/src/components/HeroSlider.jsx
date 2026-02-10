@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowRight,
   Pause,
@@ -7,24 +7,62 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-import { heroSlides } from "../data/pagedata";
-
-const slides = heroSlides;
-
+import api from "../api";
+// Fallback slides defined inline to avoid dependency on deleted data file
 const HeroSlider = () => {
+  const [slides, setSlides] = useState([]);
   const [current, setCurrent] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
+  const videoRef = useRef(null);
 
+  // Fetch Banners from API
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await api.get("/banners");
+        const data = res.data;
+        // Filter out empty URLs
+        const validBanners = data.filter(b => b.url && b.url.trim() !== "");
+
+        if (validBanners.length > 0) {
+          const mappedSlides = validBanners.map((b, i) => ({
+            id: b.id,
+            image: b.url,
+            type: b.type,
+            title: b.text || "",
+            subtitle: b.pillText || "",
+            align: i % 2 === 0 ? "left" : "right"
+          }));
+          setSlides(mappedSlides);
+        }
+      } catch (error) {
+        console.error("Failed to fetch banners");
+      }
+    };
+    fetchBanners();
+  }, []);
+
+  // Auto-advance logic
   useEffect(() => {
     let interval;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-      }, 5000);
+    const currentSlide = slides[current];
+
+    // If video, handle differently
+    if (currentSlide?.type === "video") {
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0;
+        videoRef.current.play().catch(e => console.log("Autoplay blocked", e));
+      }
+    } else {
+      // Image logic
+      if (isPlaying) {
+        interval = setInterval(() => {
+          setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+        }, 5000);
+      }
     }
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, current, slides]); // Run when current slide changes
 
   const nextSlide = () => {
     setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
@@ -36,8 +74,13 @@ const HeroSlider = () => {
     setIsPlaying(false);
   };
 
+  // Video ended handler
+  const handleVideoEnd = () => {
+    setCurrent((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+  };
+
   return (
-    <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden rounded-[2.5rem] shadow-2xl mb-16 border border-white/10 group">
+    <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden rounded-[2.5rem] shadow-2xl mb-16 border border-white/10 group bg-black">
       {/* Slides */}
       {slides.map((slide, index) => (
         <div
@@ -45,13 +88,25 @@ const HeroSlider = () => {
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === current ? "opacity-100 z-10" : "opacity-0 z-0"
             }`}
         >
-          {/* Background Image */}
+          {/* Background Media */}
           <div className="absolute inset-0">
-            <img
-              src={slide.image}
-              alt={slide.title}
-              className="w-full h-full object-cover filter brightness-50 contrast-110 saturate-0" // B&W Filter added here
-            />
+            {slide.type === "video" ? (
+              <video
+                ref={index === current ? videoRef : null}
+                src={slide.image}
+                className="w-full h-full object-cover filter brightness-50"
+                muted
+                playsInline
+                onEnded={handleVideoEnd}
+              />
+            ) : (
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover filter brightness-50 contrast-110 saturate-0"
+              />
+            )}
+
             {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
           </div>
@@ -69,7 +124,7 @@ const HeroSlider = () => {
               </span>
 
               <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-none mix-blend-overlay opacity-90">
-                {slide.title.split("\n").map((line, i) => (
+                {slide.title && slide.title.split("\n").map((line, i) => (
                   <span key={i} className="block">
                     {line}
                   </span>

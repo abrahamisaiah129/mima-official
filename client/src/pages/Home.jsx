@@ -1,22 +1,32 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useShop } from "../context/ShopContext";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import HeroSlider from "../components/HeroSlider";
 import Features from "../components/Features";
-import CategorySection from "../components/CategorySection"; // Restore missing import
+import CategorySection from "../components/CategorySection";
 import PaginatedSection from "../components/PaginatedSection";
 import SearchFilter from "../components/SearchFilter";
 import InstagramFeed from "../components/InstagramFeed";
 import Newsletter from "../components/Newsletter";
+import api from "../api";
 
-import { products } from "../data/products";
-import { trendingProducts } from "../data/pagedata";
+// Local data imports removed
 
-const Home = ({ addToCart, cartItems, removeFromCart, wishlistItems = [], toggleWishlist }) => {
+const Home = () => {
+  const { products: shopProducts, addToCart, cartItems, removeFromCart, wishlistItems = [], toggleWishlist } = useShop();
   // Pass ALL products to let the component handle pagination
-  const allLatest = products;
-  // Products for "Trending Now" - derived from pagedata
-  const allTrending = trendingProducts;
+  const allLatest = shopProducts || [];
+  // Products for "Trending Now" - derived from context (randomized or slice)
+  const allTrending = shopProducts ? [...shopProducts].slice(0, 8) : [];
+
+  const [mostSearched, setMostSearched] = useState([]);
+
+  useEffect(() => {
+    api.get('/most-searched')
+      .then(res => setMostSearched(res.data))
+      .catch(err => console.error("Failed to load most searched", err));
+  }, []);
 
   return (
     <div className="animate-fade-in">
@@ -69,6 +79,20 @@ const Home = ({ addToCart, cartItems, removeFromCart, wishlistItems = [], toggle
           </Link>
         }
       />
+
+      {/* MOST SEARCHED (Real-time) */}
+      {mostSearched.length > 0 && (
+        <PaginatedSection
+          title="Most Searched"
+          subtitle="What everyone is looking for right now."
+          products={mostSearched}
+          addToCart={addToCart}
+          cartItems={cartItems}
+          removeFromCart={removeFromCart}
+          wishlistItems={wishlistItems}
+          toggleWishlist={toggleWishlist}
+        />
+      )}
 
       {/* FEATURES (Moved to Bottom) */}
       <div className="mb-20 animate-slide-up delay-300">

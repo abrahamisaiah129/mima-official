@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { Search, X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useShop } from "../context/ShopContext";
 
-import { products } from "../data/products";
+// import { products } from "../data/products";
 
 const SearchFilter = () => {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
   const navigate = useNavigate();
+  const { products } = useShop();
 
   // Extract unique categories from products
   const uniqueCategories = [...new Set(products.map(product => product.category))].filter(Boolean);

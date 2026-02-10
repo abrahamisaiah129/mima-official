@@ -2,9 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ShoppingBag, ArrowLeft, Trash2, Heart } from "lucide-react";
 import Card from "./Card";
+import { useShop } from "../context/ShopContext";
 
-const Wishlist = ({ wishlistItems, removeFromWishlist, addToCart, cartItems, removeFromCart }) => {
-    if (wishlistItems.length === 0) {
+const Wishlist = () => {
+    const { wishlistItems, toggleWishlist, addToCart, cartItems, removeFromCart } = useShop();
+
+    if (!wishlistItems || wishlistItems.length === 0) {
         return (
             <div className="max-w-7xl mx-auto px-4 py-20 text-center">
                 <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400">
@@ -53,7 +56,7 @@ const Wishlist = ({ wishlistItems, removeFromWishlist, addToCart, cartItems, rem
                         cartItems={cartItems}
                         removeFromCart={removeFromCart}
                         isWishlisted={true}
-                        toggleWishlist={() => removeFromWishlist(item)}
+                        toggleWishlist={() => toggleWishlist(item)}
                     />
                 ))}
             </div>

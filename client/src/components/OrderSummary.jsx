@@ -1,29 +1,28 @@
 import React, { useState } from "react";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import PaymentModal from "./PaymentModal";
+import LoginModal from "./LoginModal";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 
 const OrderSummary = ({ subtotal }) => {
   const shipping = 2500;
   const total = subtotal + shipping;
   const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useUser();
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const handleCheckout = () => {
-    setIsProcessing(true);
-
-    // Simulate Backend Processing & Email Sending
-    setTimeout(() => {
-      setIsProcessing(false);
-      // In a real app, this would trigger a backend endpoint that uses SendGrid/Nodemailer
-      alert(
-        `Order Placed Successfully! 📧 Confirmaton email sent to your registered email.`,
-      );
-      window.location.href = "/"; // Reset/Redirect
-    }, 2000);
+    if (!user) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+    setIsPaymentModalOpen(true);
   };
 
   return (
-    <div className="bg-zinc-900 p-8 rounded-3xl border border-white/10 shadow-xl sticky top-28">
+    <div className="bg-zinc-900 p-8 rounded-3xl border border-white/10 shadow-xl h-fit">
       <h3 className="text-lg font-black text-white mb-6 uppercase tracking-wider">
         Order Summary
       </h3>
@@ -47,16 +46,36 @@ const OrderSummary = ({ subtotal }) => {
 
       <button
         onClick={handleCheckout}
-        disabled={isProcessing}
-        className="w-full bg-white hover:bg-gray-200 text-black py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-white/10 transition-all mb-4 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+        className="w-full bg-white hover:bg-gray-200 text-black py-4 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-white/10 transition-all mb-4 flex items-center justify-center gap-2"
       >
-        {isProcessing ? <Loader2 className="animate-spin" /> : "Checkout Now"}
+        {user ? "Checkout Now" : "Login to Checkout"}
       </button>
 
       <div className="flex items-center justify-center text-xs text-gray-500 space-x-2">
         <ShieldCheck size={14} />
         <span>Secure checkout with MIMA Wallet</span>
       </div>
+
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        total={total}
+      />
+      {isAuthModalOpen && (
+        <LoginModal
+          onClose={() => setIsAuthModalOpen(false)}
+          onFundRequest={() => {
+            // If they just registered/logged in via this flow, maybe duplicate logic?
+            // But generally they might want to just pay. 
+            // Currently AuthModal's "Fund Wallet" just closes and maybe we should open PaymentModal?
+            // The prompt says "Would you like to fund".
+            // If I pass a callback, I can open Wallet or PaymentModal.
+            // For checkout flow, ideally we proceed to PaymentModal.
+            setIsAuthModalOpen(false);
+            setIsPaymentModalOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 };

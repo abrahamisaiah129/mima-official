@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../api";
+import { uploadToCloudinary } from "../utils/upload";
 import {
     LayoutDashboard,
     Package,
@@ -18,171 +20,131 @@ import {
     Clock,
     Edit2,
     Menu,
+    Image, // Added for Banners
+    UploadCloud, // Added for Cloudinary
+    Printer, // Added for Order Receipt
+    Instagram, // Added for Social Tab
 } from "lucide-react";
-import { products as initialProducts } from "../data/products";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import OverviewTab from "../components/dashboard/OverviewTab";
+import ProductsTab from "../components/dashboard/ProductsTab";
+import OrdersTab from "../components/dashboard/OrdersTab";
+import CustomersTab from "../components/dashboard/CustomersTab";
+import BannersTab from "../components/dashboard/BannersTab";
+import NewsletterTab from "../components/dashboard/NewsletterTab";
+import SocialTab from "../components/dashboard/SocialTab";
+import SearchTab from "../components/dashboard/SearchTab";
+const STANDARD_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
 
-// --- Mock Admin Data ---
-const stats = [
-    { label: "Total Revenue", value: "₦12.5M", change: "+12%" },
-    { label: "Active Orders", value: "24", change: "+4%" },
-    { label: "Products", value: "156", change: "0%" },
-    { label: "Customers", value: "1.2K", change: "+18%" },
-];
+// Stat calculation moved inside component for real-time updates
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("dashboard");
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar state
-    const [products, setProducts] = useState(initialProducts);
-    const [searchTerm, setSearchTerm] = useState("");
+    const [products, setProducts] = useState([]); // Initialize empty
+    const [users, setUsers] = useState([]); // Added users state
+    const [subscribers, setSubscribers] = useState([]); // Added subscribers state
 
-    // Modals
-    const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-    const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-    const [editProduct, setEditProduct] = useState(null);
-    const [selectedOrder, setSelectedOrder] = useState(null);
+    // Fetch data function
+    const fetchData = async () => {
+        try {
+            const [authRes, prodRes, subRes, ordRes] = await Promise.all([
+                api.get("/users"),
+                api.get("/products"),
+                api.get("/newsletters"),
+                api.get("/orders")
+            ]);
 
-    const [productForm, setProductForm] = useState({
-        title: "",
-        price: "",
-        category: "",
-        imageSrc: "",
-        description: "",
-        sizes: "",
-        hasAllSizes: false,
-    });
+            const usersData = authRes.data;
+            const productsData = prodRes.data;
+            const subData = subRes.data;
+            const ordersData = ordRes.data;
+
+            setUsers(usersData);
+            setProducts(productsData);
+            setSubscribers(Array.isArray(subData) ? subData : []);
+            setOrders(Array.isArray(ordersData) ? ordersData : []);
+        } catch (error) {
+            console.error("Failed to fetch data", error);
+        }
+    };
+
+    // Initial Fetch & Polling
+    React.useEffect(() => {
+        fetchData(); // Initial load
+        const interval = setInterval(fetchData, 5000); // Poll every 5 seconds
+
+        return () => clearInterval(interval); // Cleanup on unmount
+    }, []);
+
+    // --- Cloudinary Config ---
+    // REPLACE WITH YOUR DETAILS
+    const CLOUD_NAME = "ddzpchp5x";
+    const UPLOAD_PRESET = "mima_uploads";
 
     const handleLogout = () => {
         navigate("/login");
     };
 
-    const handleAddProduct = (e) => {
-        e.preventDefault();
+    // --- Orders State ---
+    const [orders, setOrders] = useState([]);
 
-        let finalSizes = [];
-        if (productForm.hasAllSizes) {
-            finalSizes = ["ALL"];
-        } else {
-            // Split by comma, trim whitespace, filter empty strings
-            finalSizes = productForm.sizes
-                .split(",")
-                .map(s => s.trim())
-                .filter(s => s !== "");
 
-            // Default sizes if none provided
-            if (finalSizes.length === 0) {
-                finalSizes = ["38", "39", "40", "41", "42"];
+
+
+    const ITEMS_PER_PAGE = 5;
+
+    // --- Real-time Stats Calculation ---
+    const stats = useMemo(() => {
+        // 1. Total Revenue
+        const totalRevenue = orders.reduce((acc, order) => acc + (order.total || 0), 0);
+
+        // 2. Active Orders (Pending, Processing, Shipped)
+        const activeOrdersCount = orders.filter(o =>
+            ["Pending", "Processing", "Shipped"].includes(o.status)
+        ).length;
+
+        // 3. Products In Stock (Sum of all product stock)
+        const totalStock = products.reduce((acc, p) => acc + (parseInt(p.stock) || 0), 0);
+
+        // Mocking "Last Month" for percentage calculation
+        const calculateChange = (current, baseline) => {
+            if (baseline === 0) return "+100%";
+            const change = ((current - baseline) / baseline) * 100;
+            return `${change >= 0 ? "+" : ""}${change.toFixed(0)}%`;
+        };
+
+        return [
+            {
+                label: "Total Revenue",
+                value: `₦${totalRevenue.toLocaleString()}`,
+                change: "+12%" // Keeping static market trend
+            },
+            {
+                label: "Active Orders",
+                value: activeOrdersCount,
+                change: calculateChange(activeOrdersCount, Math.max(0, activeOrdersCount - 2))
+            },
+            {
+                label: "Products In Stock",
+                value: totalStock,
+                change: "+5%" // Static inventory growth
             }
-        }
+        ];
+    }, [orders, products]);
 
-        const newProduct = {
-            id: products.length + 1,
-            ...productForm,
-            price: Number(productForm.price),
-            sizes: finalSizes,
-            rating: 5,
-        };
-        // Remove helper fields from the final object
-        delete newProduct.hasAllSizes;
-        // The form keeps 'sizes' as string, but the object needs 'sizes' as array.
-        // But ...productForm spreads the string 'sizes'. We need to overwrite it.
-        // Actually, let's explicitely set properties to avoid pollution logic.
-
-        const productToSave = {
-            id: editProduct ? editProduct.id : products.length + 1,
-            title: productForm.title,
-            price: Number(productForm.price),
-            category: productForm.category,
-            imageSrc: productForm.imageSrc,
-            description: productForm.description,
-            rating: editProduct ? editProduct.rating : 5,
-            sizes: finalSizes,
-            // Preserve other fields if editing
-            colors: editProduct ? editProduct.colors : [],
-            images: editProduct ? editProduct.images : [productForm.imageSrc],
-            reviews: editProduct ? editProduct.reviews : [],
-            comments: editProduct ? editProduct.comments : []
-        };
-
-        if (editProduct) {
-            setProducts(
-                products.map((p) =>
-                    p.id === editProduct.id ? productToSave : p,
-                ),
-            );
-        } else {
-            setProducts([productToSave, ...products]);
-        }
-
-        setIsProductModalOpen(false);
-        setEditProduct(null);
-        setProductForm({
-            title: "",
-            price: "",
-            category: "",
-            imageSrc: "",
-            description: "",
-            sizes: "",
-            hasAllSizes: false,
-        });
+    // --- Pagination Helper ---
+    const paginate = (data, page) => {
+        const startIndex = (page - 1) * ITEMS_PER_PAGE;
+        return data.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     };
-
-    const openEditModal = (product) => {
-        setEditProduct(product);
-        const hasAll = product.sizes && product.sizes.includes("ALL");
-        setProductForm({
-            ...product,
-            sizes: hasAll ? "" : (product.sizes ? product.sizes.join(", ") : ""),
-            hasAllSizes: hasAll
-        });
-        setIsProductModalOpen(true);
-    };
-
-    // Mock Orders Data
-    const orders = [
-        {
-            id: 10231,
-            customer: "Sarah Jenkins",
-            email: "sarah@gmail.com",
-            items: 2,
-            total: 45000,
-            status: "Paid",
-            date: "Oct 24, 2025",
-        },
-        {
-            id: 10232,
-            customer: "Mike Ross",
-            email: "mike@suits.com",
-            items: 1,
-            total: 125000,
-            status: "Pending",
-            date: "Oct 24, 2025",
-        },
-        {
-            id: 10233,
-            customer: "Jessica Pearson",
-            email: "jessica@pearson.com",
-            items: 4,
-            total: 280000,
-            status: "Shipped",
-            date: "Oct 23, 2025",
-        },
-        {
-            id: 10234,
-            customer: "Harvey Specter",
-            email: "harvey@specter.com",
-            items: 1,
-            total: 500000,
-            status: "Delivered",
-            date: "Oct 22, 2025",
-        },
-    ];
 
     return (
         <div className="min-h-screen bg-black text-white flex font-sans">
             {/* 1. Sidebar */}
             {/* 1. Sidebar (Responsive) */}
-            {/* Mobile Backdrop */}
             {isSidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/80 z-40 md:hidden backdrop-blur-sm"
@@ -197,9 +159,9 @@ const Dashboard = () => {
                 <div className="p-8 border-b border-white/10 flex justify-between items-center">
                     <a href="http://localhost:5173" className="flex items-center gap-2">
                         <img
-                            src="/MIMA-LOGO-PLACEHOLDER.png"
+                            src="/MIMA_New.png"
                             alt="MIMA Logo"
-                            className="h-8 w-auto filter invert brightness-0"
+                            className="h-8 w-8 object-contain"
                         />
                         <span className="font-bold text-xs tracking-[0.2em] text-gray-400">
                             ADMIN
@@ -215,7 +177,7 @@ const Dashboard = () => {
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2">
-                    {["dashboard", "products", "orders", "customers", "newsletter"].map(
+                    {["dashboard", "products", "orders", "customers", "banners", "newsletter", "social", "search"].map(
                         (tab) => (
                             <button
                                 key={tab}
@@ -226,7 +188,10 @@ const Dashboard = () => {
                                 {tab === "products" && <Package size={20} />}
                                 {tab === "orders" && <ShoppingBag size={20} />}
                                 {tab === "customers" && <Users size={20} />}
+                                {tab === "banners" && <Image size={20} />}
                                 {tab === "newsletter" && <Mail size={20} />}
+                                {tab === "social" && <Instagram size={20} />}
+                                {tab === "search" && <Search size={20} />}
                                 <span>{tab}</span>
                             </button>
                         ),
@@ -276,512 +241,45 @@ const Dashboard = () => {
 
                 {/* Content Area Based on Tab */}
                 {activeTab === "dashboard" && (
-                    <div className="space-y-8 animate-fade-in">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {stats.map((stat, i) => (
-                                <div
-                                    key={i}
-                                    className="bg-zinc-900 border border-white/10 p-6 rounded-2xl"
-                                >
-                                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-2">
-                                        {stat.label}
-                                    </p>
-                                    <h3 className="text-xl lg:text-2xl font-black text-white truncate" title={stat.value}>
-                                        {stat.value}
-                                    </h3>
-                                    <span className="text-green-500 text-xs font-bold mt-2 block">
-                                        {stat.change} from last month
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Recent Activity Mockup */}
-                        <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8">
-                            <h3 className="text-xl font-bold mb-6">Recent Orders</h3>
-                            <div className="space-y-4">
-                                {orders.slice(0, 3).map((order) => (
-                                    <div
-                                        key={order.id}
-                                        className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5 cursor-pointer hover:bg-white/5 transition"
-                                        onClick={() => {
-                                            setSelectedOrder(order);
-                                            setIsOrderModalOpen(true);
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                                                <ShoppingBag size={18} />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-white">
-                                                    Order #{order.id}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {order.items} items • ₦{order.total.toLocaleString()}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === "Paid"
-                                                ? "bg-green-500/10 text-green-500"
-                                                : order.status === "Pending"
-                                                    ? "bg-yellow-500/10 text-yellow-500"
-                                                    : "bg-blue-500/10 text-blue-500"
-                                                }`}
-                                        >
-                                            {order.status}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    <OverviewTab stats={stats} orders={orders} products={products} users={users} setActiveTab={setActiveTab} />
                 )}
 
+                {/* Banners Tab */}
+                {activeTab === "banners" && (
+                    <BannersTab />
+                )}
                 {activeTab === "products" && (
-                    <div className="animate-fade-in">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search products..."
-                                    className="bg-zinc-900 border border-white/10 rounded-full py-3 pl-10 pr-4 text-white w-64 focus:border-white transition-colors outline-none"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                                <Search
-                                    size={16}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
-                                />
-                            </div>
-                            <button
-                                onClick={() => {
-                                    setEditProduct(null);
-                                    setProductForm({
-                                        title: "",
-                                        price: "",
-                                        category: "",
-                                        imageSrc: "",
-                                        description: "",
-                                    });
-                                    setIsProductModalOpen(true);
-                                }}
-                                className="bg-white text-black px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:bg-gray-200 transition"
-                            >
-                                <Plus size={18} /> Add Product
-                            </button>
-                        </div>
-
-                        <div className="bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-black/40 text-gray-400 font-bold uppercase text-xs tracking-wider">
-                                    <tr>
-                                        <th className="p-6">Product</th>
-                                        <th className="p-6">Category</th>
-                                        <th className="p-6">Price</th>
-                                        <th className="p-6">Stock</th>
-                                        <th className="p-6">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5">
-                                    {products
-                                        .filter((p) =>
-                                            p.title.toLowerCase().includes(searchTerm.toLowerCase()),
-                                        )
-                                        .map((product) => (
-                                            <tr
-                                                key={product.id}
-                                                className="hover:bg-white/5 transition-colors"
-                                            >
-                                                <td className="p-6 flex items-center gap-4">
-                                                    <img
-                                                        src={product.imageSrc}
-                                                        alt=""
-                                                        className="w-12 h-12 rounded-lg object-cover bg-zinc-800"
-                                                    />
-                                                    <span className="font-bold text-white max-w-[200px] truncate">
-                                                        {product.title}
-                                                    </span>
-                                                </td>
-                                                <td className="p-6 text-gray-400">
-                                                    {product.category || "Uncategorized"}
-                                                </td>
-                                                <td className="p-6 text-white font-mono">
-                                                    ₦{product.price.toLocaleString()}
-                                                </td>
-                                                <td className="p-6">
-                                                    <span className="bg-green-500/10 text-green-500 px-2 py-1 rounded text-xs font-bold">
-                                                        In Stock
-                                                    </span>
-                                                </td>
-                                                <td className="p-6">
-                                                    <button
-                                                        onClick={() => openEditModal(product)}
-                                                        className="text-gray-400 hover:text-white font-bold text-sm underline flex items-center gap-1"
-                                                    >
-                                                        <Edit2 size={14} /> Edit
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <ProductsTab products={products} setProducts={setProducts} />
                 )}
 
                 {activeTab === "orders" && (
-                    <div className="animate-fade-in space-y-4">
-                        {orders.map((order) => (
-                            <div
-                                key={order.id}
-                                className="flex items-center justify-between p-6 bg-zinc-900 border border-white/10 rounded-2xl cursor-pointer hover:border-white/30 transition"
-                                onClick={() => {
-                                    setSelectedOrder(order);
-                                    setIsOrderModalOpen(true);
-                                }}
-                            >
-                                <div className="flex items-center gap-6">
-                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white font-bold">
-                                        #{order.id.toString().slice(-3)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-white">{order.customer}</h3>
-                                        <p className="text-sm text-gray-500">{order.date}</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-white text-lg">
-                                        ₦{order.total.toLocaleString()}
-                                    </p>
-                                    <p className="text-sm text-gray-500">{order.items} Items</p>
-                                </div>
-                                <span
-                                    className={`px-4 py-2 rounded-full text-xs font-bold ${order.status === "Paid"
-                                        ? "bg-green-500/10 text-green-500"
-                                        : order.status === "Pending"
-                                            ? "bg-yellow-500/10 text-yellow-500"
-                                            : "bg-blue-500/10 text-blue-500"
-                                        }`}
-                                >
-                                    {order.status}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+                    <OrdersTab orders={orders} users={users} products={products} setOrders={setOrders} />
                 )}
 
                 {/* CUSTOMERS TAB */}
-                {activeTab === "customers" && (
-                    <div className="animate-fade-in grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {orders.map((customer, i) => (
-                            <div
-                                key={i}
-                                className="bg-zinc-900 border border-white/10 p-6 rounded-2xl flex items-center gap-4"
-                            >
-                                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-xl font-bold text-white">
-                                    {customer.customer.charAt(0)}
-                                </div>
-                                <div>
-                                    <h4 className="text-lg font-bold text-white">
-                                        {customer.customer}
-                                    </h4>
-                                    <p className="text-gray-400 text-sm">{customer.email}</p>
-                                    <div className="flex gap-2 mt-2">
-                                        <span className="text-xs bg-white/10 px-2 py-1 rounded text-white">
-                                            VIP Tier
-                                        </span>
-                                        <span className="text-xs bg-green-500/10 text-green-500 px-2 py-1 rounded">
-                                            Active
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {
+                    activeTab === "customers" && (
+                        <CustomersTab users={users} subscribers={subscribers} refreshData={fetchData} />
+                    )
+                }
 
                 {/* NEWSLETTER TAB */}
                 {activeTab === "newsletter" && (
-                    <div className="animate-fade-in max-w-4xl">
-                        <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 mb-8">
-                            <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
-                                Send Campaign
-                            </h2>
-                            <p className="text-gray-500 mb-8">
-                                Blast a new drop or promotion to all 1,203 subscribers.
-                            </p>
-
-                            <form
-                                className="space-y-6"
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    alert("Campaign Sent Successfully!");
-                                }}
-                            >
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                        Subject Line
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white transition"
-                                        placeholder="e.g. FLASH SALE: 50% Off Everything!"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                        Message Content
-                                    </label>
-                                    <textarea
-                                        rows="6"
-                                        className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-white transition"
-                                        placeholder="Write your email content here..."
-                                    ></textarea>
-                                </div>
-                                <button className="bg-white hover:bg-gray-200 text-black px-8 py-4 rounded-xl font-black uppercase tracking-widest flex items-center gap-2 transition-all">
-                                    <Send size={18} /> Send Campaign
-                                </button>
-                            </form>
-                        </div>
-
-                        <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8">
-                            <h3 className="text-xl font-bold mb-6">Recent Subscribers</h3>
-                            <div className="space-y-2">
-                                {[
-                                    "sarah.j@example.com",
-                                    "mike.shoes@test.com",
-                                    "fashion.lover@gmail.com",
-                                    "admin@mima.com",
-                                ].map((email, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex items-center justify-between p-4 bg-black/20 rounded-xl border border-white/5"
-                                    >
-                                        <span className="text-gray-300 font-mono">{email}</span>
-                                        <span className="text-xs text-gray-500">
-                                            Subscribed 2h ago
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    <NewsletterTab subscribers={subscribers} />
                 )}
-            </main>
+                {/* SOCIAL / INSTAGRAM TAB */}
+                {activeTab === "social" && (
+                    <SocialTab />
+                )}
 
-            {/* --- MODALS --- */}
+                {/* SEARCH TAB */}
+                {activeTab === "search" && (
+                    <SearchTab />
+                )}
+            </main >
 
-            {/* PRODUCT MODAL */}
-            {isProductModalOpen && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-white/10 w-full max-w-2xl rounded-3xl p-8 max-h-[90vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-black text-white uppercase">
-                                {editProduct ? "Edit Product" : "Add New Product"}
-                            </h2>
-                            <button
-                                onClick={() => setIsProductModalOpen(false)}
-                                className="text-gray-400 hover:text-white"
-                            >
-                                <X />
-                            </button>
-                        </div>
-                        <form onSubmit={handleAddProduct} className="space-y-6">
-                            <div className="grid grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                                        Product Name
-                                    </label>
-                                    <input
-                                        required
-                                        value={productForm.title}
-                                        onChange={(e) =>
-                                            setProductForm({ ...productForm, title: e.target.value })
-                                        }
-                                        className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:border-white outline-none"
-                                        placeholder="e.g. Velvet Stilettos"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                                        Price (₦)
-                                    </label>
-                                    <input
-                                        required
-                                        type="number"
-                                        value={productForm.price}
-                                        onChange={(e) =>
-                                            setProductForm({ ...productForm, price: e.target.value })
-                                        }
-                                        className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:border-white outline-none"
-                                        placeholder="50000"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                                    Category
-                                </label>
-                                <select
-                                    value={productForm.category}
-                                    onChange={(e) =>
-                                        setProductForm({ ...productForm, category: e.target.value })
-                                    }
-                                    className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:border-white outline-none appearance-none"
-                                >
-                                    <option value="">Select Category</option>
-                                    <option value="Heels">Heels</option>
-                                    <option value="Sneakers">Sneakers</option>
-                                    <option value="Boots">Boots</option>
-                                    <option value="Flats">Flats</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                                    Image URL
-                                </label>
-                                <input
-                                    required
-                                    value={productForm.imageSrc}
-                                    onChange={(e) =>
-                                        setProductForm({ ...productForm, imageSrc: e.target.value })
-                                    }
-                                    className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:border-white outline-none"
-                                    placeholder="https://..."
-                                />
-                            </div>
-
-                            {/* Sizes Section */}
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-3">
-                                    Size Availability
-                                </label>
-                                <div className="space-y-4">
-                                    <label className="flex items-center space-x-3 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={productForm.hasAllSizes}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                hasAllSizes: e.target.checked,
-                                                sizes: e.target.checked ? "" : productForm.sizes
-                                            })}
-                                            className="w-5 h-5 rounded border-gray-600 bg-black text-white focus:ring-offset-black"
-                                        />
-                                        <span className="text-white font-bold">All Sizes Available</span>
-                                    </label>
-
-                                    {!productForm.hasAllSizes && (
-                                        <div>
-                                            <label className="block text-[10px] text-gray-500 uppercase mb-1">
-                                                Specific Sizes (Comma Separated)
-                                            </label>
-                                            <input
-                                                value={productForm.sizes}
-                                                onChange={(e) =>
-                                                    setProductForm({ ...productForm, sizes: e.target.value })
-                                                }
-                                                className="w-full bg-black border border-white/20 rounded-lg px-4 py-2 text-white focus:border-white outline-none text-sm"
-                                                placeholder="e.g. 38, 39, 40, 41"
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">
-                                    Description
-                                </label>
-                                <textarea
-                                    required
-                                    value={productForm.description}
-                                    onChange={(e) =>
-                                        setProductForm({
-                                            ...productForm,
-                                            description: e.target.value,
-                                        })
-                                    }
-                                    rows="4"
-                                    className="w-full bg-black border border-white/20 rounded-xl px-4 py-3 text-white focus:border-white outline-none"
-                                    placeholder="Product details..."
-                                ></textarea>
-                            </div>
-                            <button className="w-full bg-white text-black font-black uppercase py-4 rounded-xl hover:bg-gray-200 transition">
-                                {editProduct ? "Update Product" : "Create Product"}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* ORDER DETAILS MODAL */}
-            {isOrderModalOpen && selectedOrder && (
-                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-white/10 w-full max-w-lg rounded-3xl p-8 relative">
-                        <button
-                            onClick={() => setIsOrderModalOpen(false)}
-                            className="absolute top-6 right-6 text-gray-400 hover:text-white"
-                        >
-                            <X />
-                        </button>
-
-                        <div className="text-center mb-8">
-                            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500">
-                                <CheckCircle size={32} />
-                            </div>
-                            <h2 className="text-2xl font-black text-white uppercase">
-                                Order #{selectedOrder.id}
-                            </h2>
-                            <p className="text-gray-500">{selectedOrder.date}</p>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex justify-between items-center bg-black/30 p-4 rounded-xl">
-                                <span className="text-gray-400 text-sm">Customer</span>
-                                <span className="font-bold text-white text-right">
-                                    {selectedOrder.customer}
-                                    <br />
-                                    <span className="text-xs text-gray-500 font-normal">
-                                        {selectedOrder.email}
-                                    </span>
-                                </span>
-                            </div>
-
-                            <div className="space-y-2">
-                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    Order Summary
-                                </h4>
-                                <div className="flex justify-between text-white">
-                                    <span>Subtotal</span>
-                                    <span>₦{selectedOrder.total.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between text-white">
-                                    <span>Shipping</span>
-                                    <span>₦0.00</span>
-                                </div>
-                                <div className="border-t border-white/10 pt-2 flex justify-between text-white font-black text-lg">
-                                    <span>Total</span>
-                                    <span>₦{selectedOrder.total.toLocaleString()}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <button className="flex-1 bg-white text-black py-3 rounded-xl font-bold hover:bg-gray-200 flex items-center justify-center gap-2">
-                                    <Truck size={18} /> Update Status
-                                </button>
-                                <button className="flex-1 bg-zinc-800 text-white py-3 rounded-xl font-bold hover:bg-zinc-700">
-                                    Print Invoice
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
+            {/* Remaining Modals can be added here if needed, but currently fully extracted */}
+        </div >
     );
 };
 

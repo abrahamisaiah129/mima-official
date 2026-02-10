@@ -64,7 +64,7 @@ const Card = ({
   const handleAction = () => {
     if (isInCart) {
       if (removeFromCart) {
-        removeFromCart(id, selectedSize, selectedColor);
+        removeFromCart(id);
       }
     } else {
       if (addToCart) {

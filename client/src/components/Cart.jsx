@@ -3,11 +3,17 @@ import CartItem from "./CartItem";
 import OrderSummary from "./OrderSummary";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useShop } from "../context/ShopContext";
 
-const Cart = ({ cartItems, removeFromCart, updateQuantity }) => {
+const Cart = () => {
+  const { cartItems, removeFromCart, updateQuantity } = useShop();
   // Calculate Subtotal dynamically
   const subtotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
+    (acc, item) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.quantity) || 0;
+      return acc + (price * qty);
+    },
     0
   );
 

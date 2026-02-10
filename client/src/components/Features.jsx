@@ -1,6 +1,28 @@
 import React from "react";
 import { Truck, ShieldCheck, RefreshCw, CreditCard } from "lucide-react";
-import { features } from "../data/pagedata";
+
+export const features = [
+  {
+    icon: "Truck",
+    title: "Fast Delivery",
+    text: "Nationwide shipping within 3-5 days.",
+  },
+  {
+    icon: "ShieldCheck",
+    title: "Secure Wallet",
+    text: "Safe & seamless payments via your MIMA Wallet.",
+  },
+  {
+    icon: "RefreshCw",
+    title: "Easy Returns",
+    text: "Hassle-free 7-day return policy.",
+  },
+  {
+    icon: "CreditCard",
+    title: "Budget Friendly",
+    text: "Luxury looks at prices that make sense.",
+  },
+];
 
 const iconMap = {
   Truck: <Truck size={32} />,

@@ -1,19 +1,31 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Lock, User } from "lucide-react";
+import api from "../api";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        // MOCK AUTH: In production, verify against backend
-        if (email === "admin@mima.com" && password === "admin123") {
-            navigate("/dashboard");
-        } else {
-            alert("Invalid Credentials. (Try: admin@mima.com / admin123)");
+        try {
+            const res = await api.get("/admins");
+            const admins = res.data;
+
+            const user = admins.find(u => u.email === email && u.password === password);
+
+            if (user) {
+                // Ideally set token/session, but for now just navigate
+                navigate("/dashboard");
+            } else {
+                // For demo purposes, hint the credentials if failed
+                alert("Invalid Credentials. (Try: admin@mima.store / password123)");
+            }
+        } catch (error) {
+            console.error("Login Error", error);
+            alert("Login Failed. Is the server running?");
         }
     };
 
@@ -22,9 +34,9 @@ const Login = () => {
             <div className="bg-zinc-900 border border-white/10 p-10 rounded-3xl w-full max-w-md shadow-2xl">
                 <div className="text-center mb-8">
                     <img
-                        src="/MIMA-LOGO-PLACEHOLDER.png"
+                        src="/MIMA_New.png"
                         alt="MIMA Logo"
-                        className="h-12 mx-auto mb-6 filter invert brightness-0"
+                        className="h-12 w-12 object-contain mx-auto mb-6"
                     />
                     <h2 className="text-2xl font-black text-white uppercase tracking-tight">
                         Admin Portal
@@ -44,7 +56,7 @@ const Login = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:border-white transition-colors outline-none"
-                                placeholder="admin@mima.com"
+                                placeholder="admin@mima.store"
                             />
                             <User
                                 size={18}

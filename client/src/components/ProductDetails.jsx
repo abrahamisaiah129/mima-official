@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { products } from "../data/products";
+import { useShop } from "../context/ShopContext";
+import api from "../api";
 import {
   Star,
   Minus,
@@ -16,26 +17,60 @@ import ProductReviews from "./ProductReviews";
 import RelatedProducts from "./RelatedProducts";
 import SizeGuide from "./SizeGuide";
 
-const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistItems = [], toggleWishlist }) => {
+const ProductDetails = () => {
   const { id } = useParams();
-  const product = products.find((p) => p.id === parseInt(id));
+  const { products, addToCart, cartItems, removeFromCart, wishlistItems, toggleWishlist } = useShop();
 
+  const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState(product?.sizes?.[0]);
-  const [selectedColor, setSelectedColor] = useState(product?.colors?.[0]?.hex);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      let productData = products.find((p) => p.id === parseInt(id));
+      if (!productData) {
+        try {
+          const res = await api.get(`/products/${id}`);
+          productData = res.data;
+        } catch (error) {
+          console.error("Failed to fetch product details", error);
+        }
+      }
+      setProduct(productData);
+
+      if (productData) {
+        setSelectedImage(productData.imageSrc);
+        setSelectedColor(productData.colors?.[0]?.hex);
+        setSelectedSize(productData.sizes?.[0]);
+        setQuantity(1);
+
+        try {
+          const res = await api.get(`/products/${id}/reviews`);
+          setReviews(res.data);
+        } catch (error) {
+          console.error("Failed to fetch reviews", error);
+        }
+      }
+    };
+
+    fetchProductDetails();
+  }, [id, products]);
+
   // Derived state
-  const isWishlisted = wishlistItems.some((item) => item.id === product?.id);
-  const stockLevel = React.useMemo(() => Math.floor(Math.random() * 8) + 2, []); // Random stock 2-10
+  const isWishlisted = product ? wishlistItems.some((item) => item.id === product.id) : false;
+  const stockLevel = product?.stock || 0;
 
   // Check if item is in cart
-  const isInCart = cartItems.some(item =>
-    item.id === product?.id &&
+  const isInCart = product ? cartItems.some(item =>
+    item.id === product.id &&
     item.selectedSize === selectedSize &&
     item.selectedColor === selectedColor
-  );
+  ) : false;
 
   if (!product) {
     return (
@@ -47,9 +82,7 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
 
   const handleAction = () => {
     if (isInCart) {
-      if (removeFromCart) {
-        removeFromCart(product.id, selectedSize, selectedColor);
-      }
+      removeFromCart(product.id, selectedSize, selectedColor);
     } else {
       addToCart({ ...product, quantity, selectedSize, selectedColor });
     }
@@ -62,9 +95,9 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
         <div className="space-y-4 animate-slide-up">
           <div className="aspect-[4/5] bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl relative border border-white/10">
             <img
-              src={product.imageSrc}
+              src={selectedImage || product.imageSrc}
               alt={product.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-opacity duration-300"
             />
             {/* Low Stock Badge */}
             {stockLevel < 5 && (
@@ -100,6 +133,21 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
               </button>
             </div>
           </div>
+
+          {/* Thumbnail Gallery (Conditional: show only if > 1 image) */}
+          {product.images && product.images.length > 1 && (
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {product.images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedImage(img)}
+                  className={`relative w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 transition-all ${selectedImage === img || (!selectedImage && idx === 0) ? "border-white scale-105" : "border-transparent opacity-50 hover:opacity-100"}`}
+                >
+                  <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 2. Product Info Section */}
@@ -114,7 +162,7 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
                 {product.rating}.0
               </span>
               <span className="text-gray-400 font-medium ml-1 text-xs">
-                (128 Reviews)
+                ({reviews.length} Reviews)
               </span>
             </div>
           </div>
@@ -134,24 +182,26 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
           {/* Selectors */}
           <div className="space-y-8 mb-10">
             {/* Colors */}
-            <div>
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 block">
-                Select Color
-              </span>
-              <div className="flex space-x-3">
-                {product.colors.map((color) => (
-                  <button
-                    key={color.hex}
-                    onClick={() => setSelectedColor(color.hex)}
-                    style={{ backgroundColor: color.hex }}
-                    className={`w-10 h-10 rounded-full transition-all relative ${selectedColor === color.hex
-                      ? "ring-2 ring-offset-4 ring-offset-black ring-white scale-110"
-                      : "hover:scale-110 opacity-70 hover:opacity-100"
-                      }`}
-                  />
-                ))}
+            {product.colors && product.colors.length > 0 && (
+              <div>
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 block">
+                  Select Color
+                </span>
+                <div className="flex space-x-3">
+                  {product.colors.map((color) => (
+                    <button
+                      key={color.hex}
+                      onClick={() => setSelectedColor(color.hex)}
+                      style={{ backgroundColor: color.hex }}
+                      className={`w-10 h-10 rounded-full transition-all relative ${selectedColor === color.hex
+                        ? "ring-2 ring-offset-4 ring-offset-black ring-white scale-110"
+                        : "hover:scale-110 opacity-70 hover:opacity-100"
+                        }`}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Sizes */}
             <div>
@@ -168,7 +218,7 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
               </div>
               <div className="relative">
                 <select
-                  value={selectedSize}
+                  value={selectedSize || ''}
                   onChange={(e) => setSelectedSize(e.target.value)}
                   className="w-full bg-zinc-900 border border-white/20 text-white text-sm font-bold uppercase tracking-wider rounded-xl py-4 px-4 focus:outline-none focus:border-white appearance-none cursor-pointer hover:border-white/40 transition"
                 >
@@ -206,15 +256,23 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
               </button>
             </div>
 
-            {/* Add to Cart */}
+            {/* Add to Cart / Remove Toggle */}
             <button
               onClick={handleAction}
-              className={`flex-1 rounded-xl font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] ${isInCart
-                  ? "bg-red-500 hover:bg-red-600 text-white"
-                  : "bg-white hover:bg-gray-200 text-black"
+              className={`flex-1 rounded-xl font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] py-4 shadow-xl ${isInCart
+                ? "bg-red-600 hover:bg-red-700 text-white shadow-red-900/20"
+                : "bg-white hover:bg-gray-200 text-black shadow-white/10"
                 }`}
             >
-              {isInCart ? "Remove from Bag" : "Add to Bag"}
+              {isInCart ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Minus size={18} /> Remove from Bag
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <Plus size={18} /> Add to Bag
+                </span>
+              )}
             </button>
           </div>
 
@@ -248,7 +306,7 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
             onClick={() => setActiveTab("reviews")}
             className={`pb-4 px-6 text-sm font-bold uppercase tracking-widest transition-all relative ${activeTab === "reviews" ? "text-white" : "text-gray-500 hover:text-gray-300"}`}
           >
-            Reviews (128)
+            Reviews ({reviews.length})
             {activeTab === "reviews" && (
               <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white" />
             )}
@@ -282,7 +340,7 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
             </div>
           )}
 
-          {activeTab === "reviews" && <ProductReviews />}
+          {activeTab === "reviews" && <ProductReviews reviews={reviews} />}
 
           {activeTab === "shipping" && (
             <div className="space-y-4 text-gray-400 leading-relaxed">
@@ -313,9 +371,8 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
       {/* 4. RELATED PRODUCTS */}
       <div className="mt-20">
         <RelatedProducts
-          products={products}
-          currentId={product.id}
-          addToCart={addToCart}
+          currentProductId={product.id}
+          category={product.category}
         />
       </div>
 
@@ -326,6 +383,5 @@ const ProductDetails = ({ addToCart, cartItems = [], removeFromCart, wishlistIte
     </div>
   );
 };
-
 
 export default ProductDetails;

@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import Card from "./Card";
 
 const RelatedProducts = ({ products, currentId, addToCart }) => {
+  // Guard against undefined products
+  if (!products || products.length === 0) return null;
+
   // Filter out current product and get random 3
   const related = products
     .filter((p) => p.id !== currentId)

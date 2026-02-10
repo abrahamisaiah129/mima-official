@@ -1,0 +1,547 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "title": "VELVET RED STILETTOS",
+      "category": "Heels",
+      "description": "Classic high heels with a velvet finish for elegant nights.",
+      "imageSrc": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
+      "price": 125000,
+      "rating": 5,
+      "sizes": [
+        "36",
+        "37",
+        "38",
+        "39",
+        "40"
+      ],
+      "colors": [
+        {
+          "name": "Red",
+          "hex": "#DC2626"
+        },
+        {
+          "name": "Black",
+          "hex": "#111827"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": [
+        {
+          "id": 1,
+          "name": "Sarah J.",
+          "rating": 5,
+          "comment": "Absolutely stunning!"
+        },
+        {
+          "id": 2,
+          "name": "Michael K.",
+          "rating": 5,
+          "comment": "Perfect fit for my wife."
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "URBAN STREET RUNNER",
+      "category": "Sneakers",
+      "description": "Lightweight mesh sneakers designed for daily urban exploration.",
+      "imageSrc": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
+      "price": 85000,
+      "rating": 4,
+      "sizes": [
+        "ALL"
+      ],
+      "colors": [
+        {
+          "name": "Neon Orange",
+          "hex": "#FF5F1F"
+        },
+        {
+          "name": "Ghost White",
+          "hex": "#F8F9FA"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": [
+        {
+          "id": 1,
+          "name": "James L.",
+          "rating": 4,
+          "comment": "Very comfy but runs small."
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "MIDNIGHT CHELSEA BOOTS",
+      "category": "Boots",
+      "description": "Premium suede leather boots with elastic side panels.",
+      "imageSrc": "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?q=80&w=800&auto=format&fit=crop",
+      "price": 155000,
+      "rating": 5,
+      "sizes": [
+        "40",
+        "41",
+        "42",
+        "43"
+      ],
+      "colors": [
+        {
+          "name": "Midnight Black",
+          "hex": "#000000"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1638247025967-b4e38f787b76?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": [
+        {
+          "id": 1,
+          "name": "Robert D.",
+          "rating": 5,
+          "comment": "High quality leather."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "VINTAGE CANVAS LOW",
+      "category": "Casual",
+      "description": "Classic canvas shoes for a timeless, laid-back look.",
+      "imageSrc": "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop",
+      "price": 45000,
+      "rating": 4,
+      "sizes": [
+        "38",
+        "39",
+        "40",
+        "41",
+        "42"
+      ],
+      "colors": [
+        {
+          "name": "Olive",
+          "hex": "#556B2F"
+        },
+        {
+          "name": "Tan",
+          "hex": "#D2B48C"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "id": 5,
+      "title": "SKYLINE PRO BASKETBALL",
+      "category": "Sports",
+      "description": "High-top performance shoes with maximum ankle support.",
+      "imageSrc": "https://images.unsplash.com/photo-1512374382149-4332c6c75d61?q=80&w=800&auto=format&fit=crop",
+      "price": 180000,
+      "rating": 5,
+      "sizes": [
+        "42",
+        "43",
+        "44",
+        "45",
+        "46"
+      ],
+      "colors": [
+        {
+          "name": "Electric Blue",
+          "hex": "#2563EB"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1512374382149-4332c6c75d61?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1512374382149-4332c6c75d61?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1512374382149-4332c6c75d61?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1512374382149-4332c6c75d61?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1512374382149-4332c6c75d61?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": [
+        {
+          "id": 1,
+          "name": "Jordan W.",
+          "rating": 5,
+          "comment": "Best grip on court."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "EMERALD SATIN PUMPS",
+      "category": "Heels",
+      "description": "Luxurious satin pumps with a pointed toe and slim heel.",
+      "imageSrc": "https://images.unsplash.com/photo-1596702994242-7000afb3f41c?q=80&w=800&auto=format&fit=crop",
+      "price": 110000,
+      "rating": 4,
+      "sizes": [
+        "36",
+        "37",
+        "38",
+        "39"
+      ],
+      "colors": [
+        {
+          "name": "Emerald",
+          "hex": "#065F46"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1596702994242-7000afb3f41c?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1596702994242-7000afb3f41c?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1596702994242-7000afb3f41c?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1596702994242-7000afb3f41c?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1596702994242-7000afb3f41c?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "id": 7,
+      "title": "SAHARA DESERT BOOTS",
+      "category": "Boots",
+      "description": "Rugged yet stylish boots for outdoor adventures.",
+      "imageSrc": "https://images.unsplash.com/photo-1520639889313-7272a74b1c73?q=80&w=800&auto=format&fit=crop",
+      "price": 135000,
+      "rating": 5,
+      "sizes": [
+        "40",
+        "41",
+        "42",
+        "43",
+        "44"
+      ],
+      "colors": [
+        {
+          "name": "Sand",
+          "hex": "#C2B280"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1520639889313-7272a74b1c73?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1520639889313-7272a74b1c73?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1520639889313-7272a74b1c73?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1520639889313-7272a74b1c73?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1520639889313-7272a74b1c73?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "id": 8,
+      "title": "CLOUD COMFORT SLIDERS",
+      "category": "Casual",
+      "description": "Ultra-soft foam sliders for lounging and poolside relaxation.",
+      "imageSrc": "https://images.unsplash.com/photo-1603487742131-4160ec999306?q=80&w=800&auto=format&fit=crop",
+      "price": 25000,
+      "rating": 4,
+      "sizes": [
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43"
+      ],
+      "colors": [
+        {
+          "name": "Yellow",
+          "hex": "#FACC15"
+        },
+        {
+          "name": "Grey",
+          "hex": "#6B7280"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1603487742131-4160ec999306?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1603487742131-4160ec999306?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1603487742131-4160ec999306?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1603487742131-4160ec999306?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1603487742131-4160ec999306?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "id": 9,
+      "title": "OXFORD DERBY CLASSICS",
+      "category": "Formal",
+      "description": "Polished leather oxfords for formal occasions and work.",
+      "imageSrc": "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?q=80&w=800&auto=format&fit=crop",
+      "price": 160000,
+      "rating": 5,
+      "sizes": [
+        "40",
+        "41",
+        "42",
+        "43",
+        "44"
+      ],
+      "colors": [
+        {
+          "name": "Mahogany",
+          "hex": "#450A0A"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "id": 10,
+      "title": "NEON TRACER TRAINERS",
+      "category": "Sneakers",
+      "description": "Reflective accents for safety and style during night runs.",
+      "imageSrc": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop",
+      "price": 98000,
+      "rating": 4,
+      "sizes": [
+        "39",
+        "40",
+        "41",
+        "42",
+        "43"
+      ],
+      "colors": [
+        {
+          "name": "Volt",
+          "hex": "#CEFF00"
+        }
+      ],
+      "images": [
+        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800&auto=format&fit=crop"
+      ],
+      "stock": 15,
+      "comments": [],
+      "reviews": []
+    }
+  ],
+  "orders": [
+    {
+      "id": 1,
+      "date": "2022-01-01",
+      "items": 1,
+      "total": 100,
+      "status": "Delivered",
+      "user_id": 1,
+      "email": "abrahamisaiah129@gmail.com"
+    },
+    {
+      "id": 2,
+      "date": "2022-01-02",
+      "total": 200,
+      "status": "Delivered",
+      "user_id": 2,
+      "email": "john.doe@example.com"
+    },
+    {
+      "id": 3,
+      "date": "2022-01-03",
+      "total": 300,
+      "status": "Pending",
+      "user_id": 3,
+      "email": "jane.smith@example.com"
+    },
+    {
+      "id": 4,
+      "date": "2022-01-04",
+      "total": 400,
+      "status": "Delivered",
+      "user_id": 1,
+      "email": "abrahamisaiah129@gmail.com"
+    }
+  ],
+  "users": [
+    {
+      "id": 1,
+      "firstname": "Abraham",
+      "lastname": "Isaiah",
+      "email": "abrahamisaiah129@gmail.com",
+      "password": "password123",
+      "address": "123 Main St, Anytown, USA",
+      "phone": "09132260101",
+      "balance": 1000000,
+      "memberSince": "2025"
+    },
+    {
+      "id": 2,
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john.doe@example.com",
+      "password": "password123",
+      "address": "456 Elm St, Gotham City",
+      "phone": "08012345678",
+      "balance": 5000,
+      "memberSince": "2024"
+    },
+    {
+      "id": 3,
+      "firstname": "Jane",
+      "lastname": "Smith",
+      "email": "jane.smith@example.com",
+      "password": "password123",
+      "address": "789 Pine St, Metropolis",
+      "phone": "08098765432",
+      "balance": 15000,
+      "memberSince": "2024"
+    },
+    {
+      "email": "admin@mima.com",
+      "password": "admin123",
+      "firstname": "abraham",
+      "lastname": "isaiah",
+      "address": "George Street Olodi-apapa Lagos 7",
+      "phone": "09132260101",
+      "id": "1770381192117",
+      "balance": 0,
+      "transactions": [],
+      "orderHistory": [],
+      "wishlist": [],
+      "cart": []
+    }
+  ],
+  "subscribers": [
+    {
+      "id": 1,
+      "email": "fan1@example.com",
+      "date": "2023-10-01T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "email": "customer2@example.com",
+      "date": "2023-11-15T14:30:00.000Z"
+    },
+    {
+      "id": 3,
+      "email": "shoelover@example.com",
+      "date": "2023-12-20T09:15:00.000Z"
+    }
+  ],
+  "banners": [
+    {
+      "id": 1,
+      "url": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop",
+      "type": "image"
+    },
+    {
+      "id": 2,
+      "url": "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=2071&auto=format&fit=crop",
+      "type": "image"
+    },
+    {
+      "id": 3,
+      "url": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=2070&auto=format&fit=crop",
+      "type": "image"
+    }
+  ],
+  "newsletters": [
+    "abrahamisaiah129@gmail.com",
+    "sarah.j@example.com",
+    "fashion.lover@gmail.com",
+    "abrahamisaiah121@gmail.com"
+  ],
+  "admins": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "password123",
+      "role": "admin",
+      "email": "admin@mima.store"
+    },
+    {
+      "id": 2,
+      "username": "izaya",
+      "password": "password123",
+      "role": "admin",
+      "email": "izaya@mima.store"
+    }
+  ],
+  "searches": [],
+  "posts": [
+    {
+      "id": 2,
+      "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?q=80&w=600&auto=format&fit=crop",
+      "user": "@luxury.feet",
+      "date": "5h ago",
+      "link": "https://www.instagram.com/"
+    },
+    {
+      "id": 3,
+      "image": "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?q=80&w=600&auto=format&fit=crop",
+      "user": "@urban.minimalist",
+      "date": "1d ago",
+      "link": "https://www.instagram.com/"
+    },
+    {
+      "id": 4,
+      "image": "https://images.unsplash.com/photo-1552346154-21d32810aba3?q=80&w=600&auto=format&fit=crop",
+      "user": "@kicks.daily",
+      "date": "2d ago",
+      "link": "https://www.instagram.com/"
+    },
+    {
+      "id": 5,
+      "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=600&auto=format&fit=crop",
+      "user": "@ceo.looks",
+      "date": "3d ago",
+      "link": "https://www.instagram.com/"
+    },
+    {
+      "id": 1770496764066,
+      "image": "https://res.cloudinary.com/ddzpchp5x/image/upload/v1770496760/a8nm8kfvkjdgohgbhfry.png",
+      "user": "issi",
+      "link": "http://localhost:5174/dashboard",
+      "date": "Just now"
+    }
+  ]
+}

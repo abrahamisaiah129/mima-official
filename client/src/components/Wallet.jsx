@@ -7,14 +7,40 @@ import {
 } from "lucide-react";
 import WalletTransaction from "./WalletTransaction";
 import AddFundsForm from "./AddFundsForm";
+import TransactionDetailsModal from "./TransactionDetailsModal";
+import LoginModal from "./LoginModal";
 
-import { profile } from "../data/profile";
+import { useUser } from "../context/UserContext";
 
 const Wallet = () => {
   const [showAddFunds, setShowAddFunds] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const { user } = useUser();
 
-  // Mock Data
-  const transactions = profile.transactions;
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 bg-white border border-gray-200 rounded-2xl shadow-xl">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+          <WalletIcon size={32} className="text-gray-400" />
+        </div>
+        <h2 className="text-2xl font-black mb-2 uppercase tracking-tight">Wallet Locked</h2>
+        <p className="text-gray-500 mb-8 max-w-xs mx-auto">
+          Please log in to access your funds, transaction history, and top-up features.
+        </p>
+        <button
+          onClick={() => setShowLoginModal(true)}
+          className="bg-black text-white px-8 py-3 rounded-xl font-bold uppercase tracking-widest hover:bg-zinc-800 transition shadow-lg"
+        >
+          Login to Wallet
+        </button>
+        {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
+      </div>
+    );
+  }
+
+  // Get recent transactions from user context
+  const transactions = user.transactions ? user.transactions.slice(0, 5) : [];
 
   return (
     <div className="bg-zinc-900 rounded-2xl shadow-sm border border-zinc-800 overflow-hidden">
@@ -29,7 +55,7 @@ const Wallet = () => {
               <p className="text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">
                 Total Balance
               </p>
-              <h2 className="text-4xl font-black tracking-tight">₦{profile.balance.toLocaleString()}</h2>
+              <h2 className="text-4xl font-black tracking-tight">₦{user.balance.toLocaleString()}</h2>
             </div>
             <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white">
               <WalletIcon size={24} />
@@ -52,9 +78,18 @@ const Wallet = () => {
           Recent Transactions
         </h3>
         <div className="space-y-4">
-          {transactions.map((txn) => (
-            <WalletTransaction key={txn.id} data={txn} />
-          ))}
+          {transactions.length > 0 ? (
+            transactions.map((txn) => (
+              <WalletTransaction
+                key={txn.id}
+                data={txn}
+                onClick={() => setSelectedTransaction(txn)}
+              />
+            ))
+          ) : (
+            <p className="text-gray-500 text-sm italic">No transactions yet.</p>
+          )}
+
         </div>
       </div>
 
@@ -72,6 +107,11 @@ const Wallet = () => {
           </div>
         </div>
       )}
+      {/* 4. Transaction Details Modal */}
+      <TransactionDetailsModal
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+      />
     </div>
   );
 };

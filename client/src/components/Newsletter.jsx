@@ -1,21 +1,50 @@
 import React, { useState } from "react";
+import { useUser } from "../context/UserContext";
 import { Mail, ArrowRight, Check } from "lucide-react";
+import api from "../api";
 
 const Newsletter = () => {
+  const { user } = useUser();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("idle"); // idle, loading, success
+  const [isVisible, setIsVisible] = useState(true);
 
-  const handleSubmit = (e) => {
+  // Check if already subscribed
+  React.useEffect(() => {
+    if (user?.email) {
+      api.get("/newsletters")
+        .then((res) => {
+          const data = res.data;
+          if (Array.isArray(data) && data.includes(user.email)) {
+            setIsVisible(false);
+          }
+        })
+        .catch((err) => console.error("Failed to check subscription", err));
+    }
+  }, [user]);
+
+  if (!isVisible) return null;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
 
     setStatus("loading");
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      await api.post("/newsletter", { email });
       setStatus("success");
       setEmail("");
-    }, 1500);
+    } catch (error) {
+      const errorMsg = error.response?.data?.error;
+      if (errorMsg === "Already subscribed") {
+        setStatus("success"); // Treat as success to the user for a better experience
+      } else {
+        console.error("Subscription error", error);
+        alert(errorMsg || "Subscription failed");
+        setStatus("idle");
+      }
+    }
   };
 
   return (

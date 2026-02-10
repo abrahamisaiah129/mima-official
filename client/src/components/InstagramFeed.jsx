@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Instagram } from "lucide-react";
-import { posts } from "../data/pagedata";
+import api from "../api";
 
 const InstagramFeed = () => {
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    api.get('/posts')
+      .then(res => setPosts(res.data))
+      .catch(err => console.error("Failed to load instagram posts", err));
+  }, []);
+
   return (
     <div className="py-20 border-t border-white/5 relative overflow-hidden">
       <div className="text-center mb-12">

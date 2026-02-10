@@ -1,10 +1,11 @@
 import React from "react";
 import { Package, ChevronRight, CheckCircle, Clock } from "lucide-react";
 
-import { profile } from "../data/profile";
+import { useUser } from "../context/UserContext";
 
 const OrderHistory = () => {
-  const orders = profile.orderHistory;
+  const { user } = useUser();
+  const orders = user?.orderHistory || [];
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

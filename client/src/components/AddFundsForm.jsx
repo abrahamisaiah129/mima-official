@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { CreditCard, Lock } from "lucide-react";
+import { useNotification } from "../context/NotificationContext";
+import { useUser } from "../context/UserContext";
+import { usePaystackPayment } from "react-paystack";
 
 /**
  * Add Funds Component
@@ -15,14 +18,38 @@ import { CreditCard, Lock } from "lucide-react";
 
 const AddFundsForm = () => {
   const [amount, setAmount] = useState("");
+  const { notify } = useNotification();
+  const { user, addFunds } = useUser();
+
+  const config = {
+    reference: (new Date()).getTime().toString(),
+    email: user?.email || "user@example.com",
+    amount: amount * 100, // Paystack uses kobo (100 kobo = 1 Naira)
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "",
+  };
+
+  const initializePayment = usePaystackPayment(config);
+
+  const onSuccess = async (reference) => {
+    notify("info", "Payment Verified", "Adding funds to your wallet...");
+    const numAmount = parseInt(amount);
+    const res = await addFunds(numAmount);
+
+    if (res.success) {
+      notify("success", "Top Up Successful", `₦${numAmount.toLocaleString()} added to wallet.`);
+      setAmount("");
+    } else {
+      notify("error", "Transaction Failed", res.message);
+    }
+  };
+
+  const onClose = () => {
+    notify("info", "Transaction Cancelled", "You cancelled the payment.");
+  }
 
   const handlePayment = () => {
     if (!amount) return;
-    alert(
-      `Initiating payment of ₦${amount}... This is where the Paystack Popup opens.`,
-    );
-    // REAL IMPLEMENTATION:
-    // initializePayment(onSuccess, onClose)
+    initializePayment(onSuccess, onClose);
   };
 
   return (

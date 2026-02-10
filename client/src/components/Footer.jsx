@@ -1,8 +1,31 @@
-import React from "react";
-import { Instagram, Twitter, Facebook } from "lucide-react";
+import React, { useState } from "react";
+import { Instagram, Twitter, Facebook, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useNotification } from "../context/NotificationContext";
+import api from "../api";
 
 const Footer = () => {
+  const [email, setEmail] = useState("");
+  const { notify } = useNotification();
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (email) {
+      try {
+        await api.post("/newsletter", { email });
+        notify("success", "Subscribed!", "You've successfully joined the MIMA community.");
+        setEmail("");
+      } catch (error) {
+        const errorMsg = error.response?.data?.error;
+        if (errorMsg === "Already subscribed") {
+          notify("info", "Already Subscribed", "You are already on the list!");
+          setEmail("");
+        } else {
+          notify("error", "Subscription Failed", errorMsg || "Please try again.");
+        }
+      }
+    }
+  };
   return (
     <footer className="bg-black border-t border-zinc-900 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,6 +41,26 @@ const Footer = () => {
               Premium footwear designed for comfort, style, and confidence. Slay
               on a budget without compromising on quality.
             </p>
+
+            {/* Newsletter Form */}
+            <form onSubmit={handleSubscribe} className="mb-6">
+              <h5 className="text-white text-xs font-bold uppercase tracking-widest mb-2">Don't Miss the Drop</h5>
+              <p className="text-gray-500 text-xs mb-3">Join the community for exclusive access.</p>
+              <div className="flex bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 focus-within:border-white transition-colors">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  className="bg-transparent text-white text-sm px-4 py-2 w-full focus:outline-none placeholder-gray-600"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+                <button type="submit" className="bg-white text-black px-4 py-2 hover:bg-gray-200 transition">
+                  <Mail size={16} />
+                </button>
+              </div>
+            </form>
+
             <div className="flex space-x-4">
               <a
                 href="#"
