@@ -16,72 +16,51 @@ router.post('/send-otp', async (req, res) => {
             return res.status(400).json({ message: 'Email is required' });
         }
 
-        const user = await User.findOne({ email });
+        // Check email credentials are configured
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            console.error("EMAIL_USER or EMAIL_PASS not configured in environment variables");
+            return res.status(500).json({ message: 'Email service is not configured. Please contact support.' });
+        }
 
-        // Prevent user enumeration: always respond the same way
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.json({ message: 'OTP sent to your email' });
+            return res.status(400).json({ message: 'No account found with that email' });
         }
 
         // Generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        let sendSuccess = false;
-
-        console.log("Attempting to send OTP...");
-        console.log("EMAIL_USER Present:", !!process.env.EMAIL_USER);
-        console.log("EMAIL_PASS Present:", !!process.env.EMAIL_PASS);
-
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            const transporter = nodemailer.createTransport({
-                host: "smtp.gmail.com",
-                port: 465,
-                secure: true,
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
-
-            const mailOptions = {
-                from: `"MIMA Support" <${process.env.EMAIL_USER}>`,
-                to: email,
-                subject: 'Password Reset OTP',
-                text: `Your OTP for password reset is: ${otp}. It expires in 10 minutes.`,
-                html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`
-            };
-
-            try {
-                const info = await transporter.sendMail(mailOptions);
-                console.log("Email sent successfully:", info.messageId);
-                sendSuccess = true;
-            } catch (emailError) {
-                console.error("Nodemailer Error:", emailError);
-                sendSuccess = false;
+        // Send OTP via Email
+        const transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
             }
-        } else {
-            // MOCK SEND (Fallback) - only when user exists
-            console.log("---------------------------------------------------");
-            console.log(`[MOCK EMAIL] To: ${email}`);
-            console.log(`[MOCK EMAIL] Subject: Password Reset OTP`);
-            console.log(`[MOCK EMAIL] OTP: ${otp}`);
-            console.log("---------------------------------------------------");
-            sendSuccess = true;
-        }
+        });
 
-        // Only save OTP if the email was successfully "sent" (real or mock)
-        if (sendSuccess) {
-            await OTP.deleteMany({ email }); // Invalidate any previous OTPs
-            const newOTP = new OTP({ email, otp });
-            await newOTP.save();
-        }
+        const mailOptions = {
+            from: `"MIMA Support" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Password Reset OTP',
+            text: `Your OTP for password reset is: ${otp}. It expires in 10 minutes.`,
+            html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`
+        };
 
-        // Always give the same success message (hides failures and non-existent users)
+        await transporter.sendMail(mailOptions);
+
+        // Save OTP only after email is successfully sent
+        await OTP.deleteMany({ email });
+        const newOTP = new OTP({ email, otp });
+        await newOTP.save();
+
         res.json({ message: 'OTP sent to your email' });
 
     } catch (err) {
-        console.error("Send OTP Logic Error:", err);
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Send OTP Error:", err.message);
+        res.status(500).json({ message: 'Failed to send OTP. Please try again later.' });
     }
 });
 
