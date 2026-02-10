@@ -105,22 +105,31 @@ const OrdersTab = ({ orders, users, products, setOrders }) => {
         doc.text("Official Receipt", 105, 30, { align: "center" });
 
         // Resolve User
+        // Resolve User
         const orderUser = users.find(u =>
             (order.user && (u._id === order.user || u._id === order.user.toString())) ||
             (order.email && u.email === order.email)
         );
-        const customerName = orderUser ? (orderUser.name || `${orderUser.firstName || ''} ${orderUser.lastName || ''}`.trim()) : (order.email || 'Guest');
+
+        // Priority: Shipping Details -> User Profile -> Email/Guest
+        const shippingName = order.shippingDetails?.firstName ? `${order.shippingDetails.firstName} ${order.shippingDetails.lastName}` : null;
+        const customerName = shippingName || (orderUser ? (orderUser.name || `${orderUser.firstName || ''} ${orderUser.lastName || ''}`.trim()) : (order.email || 'Guest'));
+
         const customerEmail = orderUser ? orderUser.email : order.email;
-        const customerPhone = orderUser ? orderUser.phone : '';
+        const customerPhone = order.shippingDetails?.phone || (orderUser ? orderUser.phone : '');
+        const customerAddress = order.shippingDetails?.address ?
+            `${order.shippingDetails.address}, ${order.shippingDetails.city || ''} ${order.shippingDetails.state || ''}` :
+            (orderUser?.address || "N/A");
 
         // Metadata
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
         doc.text(`Customer: ${customerName}`, 14, 40);
-        doc.text(`Customer Email: ${customerEmail}`, 14, 45);
-        doc.text(`Customer Phone: ${customerPhone || "N/A"}`, 14, 50);
-        doc.text(`Order ID: #${order._id}`, 14, 55);
-        doc.text(`Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}`, 14, 60);
+        doc.text(`Email: ${customerEmail}`, 14, 45);
+        doc.text(`Phone: ${customerPhone || "N/A"}`, 14, 50);
+        doc.text(`Address: ${customerAddress}`, 14, 55);
+        doc.text(`Order ID: #${order._id}`, 14, 62);
+        doc.text(`Date: ${order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}`, 14, 67);
 
         // Table
         const tableColumn = ["Item", "Quantity", "Price"];
@@ -343,13 +352,25 @@ const OrdersTab = ({ orders, users, products, setOrders }) => {
                             </p>
 
                             <div className="space-y-4 bg-black/50 print:bg-gray-100/50 rounded-2xl p-6 text-left">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center mb-2">
                                     <span className="text-gray-500 text-sm">Customer</span>
-                                    <span className="text-white print:text-black font-medium text-sm text-right px-2">{selectedOrder.email || 'N/A'}</span>
+                                    <span className="text-white print:text-black font-medium text-sm text-right">{selectedOrder.shippingDetails?.firstName ? `${selectedOrder.shippingDetails.firstName} ${selectedOrder.shippingDetails.lastName}` : (selectedOrder.email || 'Guest')}</span>
                                 </div>
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center mb-2">
                                     <span className="text-gray-500 text-sm">Email</span>
                                     <span className="text-white print:text-black font-mono text-sm">{selectedOrder.email}</span>
+                                </div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-gray-500 text-sm">Phone</span>
+                                    <span className="text-white print:text-black font-mono text-sm">{selectedOrder.shippingDetails?.phone || "N/A"}</span>
+                                </div>
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-gray-500 text-sm">Address</span>
+                                    <span className="text-white print:text-black font-medium text-sm text-right px-2 max-w-[200px]">
+                                        {selectedOrder.shippingDetails?.address ?
+                                            `${selectedOrder.shippingDetails.address}, ${selectedOrder.shippingDetails.city || ''}, ${selectedOrder.shippingDetails.state || ''}`
+                                            : "N/A"}
+                                    </span>
                                 </div>
 
                                 {/* Items Table */}

@@ -191,7 +191,8 @@ router.post('/cart', async (req, res) => {
             total: total,
             status: paymentMethod === 'paystack' ? "processing" : "pending",
             paymentMethod: paymentMethod || 'wallet',
-            paymentStatus: 'Paid'
+            paymentStatus: 'Paid',
+            shippingDetails: req.body.shippingDetails || {}
         });
 
         const savedOrder = await newOrder.save();

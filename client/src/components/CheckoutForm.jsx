@@ -1,10 +1,129 @@
-import React, { useState } from "react";
-import { Wallet, CreditCard, MapPin } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Wallet, CreditCard, MapPin, Lock } from "lucide-react"; // Added Lock
+import { useUser } from "../context/UserContext";
+import { useShop } from "../context/ShopContext";
+import { useNotification } from "../context/NotificationContext";
+import { useNavigate } from "react-router-dom";
+import { usePaystackPayment } from "react-paystack"; // Import Paystack hook
 
 const CheckoutForm = () => {
+  const { user, loading } = useUser();
+  const { cartItems, processCheckout } = useShop();
+  const { notify } = useNotification();
+  const navigate = useNavigate();
+
   const [paymentMethod, setPaymentMethod] = useState("wallet");
-  const walletBalance = 50000;
-  const orderTotal = 29500;
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      notify("error", "Access Denied", "Please login to checkout.");
+      navigate("/login");
+    }
+  }, [loading, user, navigate, notify]);
+
+  // Initialize form data with user details if available
+  const [shippingInfo, setShippingInfo] = useState({
+    firstName: "",
+    lastName: "",
+    address: "",
+    city: "",
+    state: "",
+    phone: ""
+  });
+
+  useEffect(() => {
+    if (user) {
+      setShippingInfo({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        address: user.address || "",
+        city: "",
+        state: "",
+        phone: user.phone || ""
+      });
+    }
+  }, [user]);
+
+  const handleChange = (e) => {
+    setShippingInfo({ ...shippingInfo, [e.target.name]: e.target.value });
+  };
+
+  const walletBalance = user?.balance || 0;
+
+  // Calculate Totals
+  const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) * Number(item.quantity)), 0);
+  const shipping = 2500;
+  const orderTotal = subtotal + shipping;
+
+  // Paystack Configuration
+  const config = {
+    reference: (new Date()).getTime().toString(),
+    email: user?.email || "guest@example.com",
+    amount: orderTotal * 100, // Amount in kobo
+    publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "",
+  };
+
+  const initializePayment = usePaystackPayment(config);
+
+  const onPaystackSuccess = async (reference) => {
+    try {
+      await processCheckout({
+        paymentMethod: 'paystack',
+        reference: reference.reference,
+        shippingDetails: shippingInfo
+      });
+      notify("success", "Payment Successful", `Ref: ${reference.reference}`);
+      navigate("/");
+    } catch (err) {
+      setIsProcessing(false);
+    }
+  };
+
+  const onPaystackClose = () => {
+    setIsProcessing(false);
+  };
+
+  const handlePay = async () => {
+    if (cartItems.length === 0) {
+      notify("error", "Cart is Empty", "Add items to cart before checkout");
+      return;
+    }
+
+    // Validate Shipping Info
+    if (!shippingInfo.address || !shippingInfo.phone || !shippingInfo.firstName || !shippingInfo.lastName) {
+      notify("error", "Missing Details", "Please fill in all shipping details.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    if (paymentMethod === "wallet") {
+      if (walletBalance < orderTotal) {
+        notify("error", "Insufficient Balance", "Please top up your wallet.");
+        setIsProcessing(false);
+        return;
+      }
+
+      try {
+        await processCheckout({
+          paymentMethod: 'wallet',
+          reference: `WALLET-${Date.now()}`,
+          shippingDetails: shippingInfo
+        });
+
+        notify("success", "Payment Successful", "Order placed successfully!");
+        navigate("/");
+      } catch (err) {
+        setIsProcessing(false);
+        // processCheckout handles errors
+      }
+    } else {
+      // Trigger Paystack
+      initializePayment(onPaystackSuccess, onPaystackClose);
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
@@ -21,31 +140,49 @@ const CheckoutForm = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input
             type="text"
+            name="firstName"
+            value={shippingInfo.firstName}
+            onChange={handleChange}
             placeholder="First Name"
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-900"
           />
           <input
             type="text"
+            name="lastName"
+            value={shippingInfo.lastName}
+            onChange={handleChange}
             placeholder="Last Name"
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-900"
           />
           <input
             type="text"
+            name="address"
+            value={shippingInfo.address}
+            onChange={handleChange}
             placeholder="Address Line"
             className="md:col-span-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-900"
           />
           <input
             type="text"
+            name="city"
+            value={shippingInfo.city}
+            onChange={handleChange}
             placeholder="City"
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-900"
           />
           <input
             type="text"
+            name="state"
+            value={shippingInfo.state}
+            onChange={handleChange}
             placeholder="State"
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-900"
           />
           <input
             type="tel"
+            name="phone"
+            value={shippingInfo.phone}
+            onChange={handleChange}
             placeholder="Phone Number"
             className="md:col-span-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-900"
           />
@@ -62,11 +199,10 @@ const CheckoutForm = () => {
         <div className="space-y-3">
           {/* Wallet Option */}
           <label
-            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-              paymentMethod === "wallet"
-                ? "border-red-600 bg-red-50"
-                : "border-gray-100 hover:border-gray-200"
-            }`}
+            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "wallet"
+              ? "border-red-600 bg-red-50"
+              : "border-gray-100 hover:border-gray-200"
+              }`}
           >
             <div className="flex items-center">
               <input
@@ -89,11 +225,10 @@ const CheckoutForm = () => {
 
           {/* Card Option (Disabled visual) */}
           <label
-            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${
-              paymentMethod === "card"
-                ? "border-red-600 bg-red-50"
-                : "border-gray-100 hover:border-gray-200"
-            }`}
+            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
+              ? "border-red-600 bg-red-50"
+              : "border-gray-100 hover:border-gray-200"
+              }`}
           >
             <div className="flex items-center">
               <input
@@ -117,8 +252,12 @@ const CheckoutForm = () => {
       </div>
 
       {/* Pay Button */}
-      <button className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all">
-        Pay ₦{orderTotal.toLocaleString()}
+      <button
+        onClick={handlePay}
+        disabled={isProcessing || (paymentMethod === "wallet" && walletBalance < orderTotal) || cartItems.length === 0}
+        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        {isProcessing ? "Processing..." : `Pay ₦${orderTotal.toLocaleString()}`}
+        {!isProcessing && <Lock size={16} />}
       </button>
 
       {/* Wallet Balance Warning */}

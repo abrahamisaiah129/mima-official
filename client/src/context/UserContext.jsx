@@ -5,16 +5,16 @@ const UserContext = createContext();
 
 export const useUser = () => useContext(UserContext);
 
-
-
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem("MIMA_TOKEN"));
+    const [loading, setLoading] = useState(true);
 
     const loadUser = async () => {
         const storedToken = localStorage.getItem("MIMA_TOKEN");
         if (!storedToken) {
             setUser(null);
+            setLoading(false);
             return;
         }
         try {
@@ -22,6 +22,8 @@ export const UserProvider = ({ children }) => {
             setUser(res.data);
         } catch (err) {
             logout();
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -123,7 +125,7 @@ export const UserProvider = ({ children }) => {
     };
 
     return (
-        <UserContext.Provider value={{ user, token, login, register, requestOTP, resetPassword, logout, updateProfile, addFunds, updateUser, loadUser }}>
+        <UserContext.Provider value={{ user, token, loading, login, register, requestOTP, resetPassword, logout, updateProfile, addFunds, updateUser, loadUser }}>
             {children}
         </UserContext.Provider>
     );

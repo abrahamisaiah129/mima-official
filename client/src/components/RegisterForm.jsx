@@ -7,9 +7,12 @@ const RegisterForm = () => {
   const { register } = useUser();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
-    password: ""
+    password: "",
+    phone: "",
+    address: ""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,27 +50,44 @@ const RegisterForm = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="relative">
-          <User
-            className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400"
-            size={20}
-          />
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            placeholder="Full Name"
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-red-600 focus:bg-white transition text-black placeholder:text-gray-400"
-          />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="relative">
+            <User
+              className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              required
+              placeholder="First Name"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-slate-900 focus:bg-white transition text-black placeholder:text-gray-400 text-sm"
+            />
+          </div>
+          <div className="relative">
+            <User
+              className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              required
+              placeholder="Last Name"
+              className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-slate-900 focus:bg-white transition text-black placeholder:text-gray-400 text-sm"
+            />
+          </div>
         </div>
 
         <div className="relative">
           <Mail
             className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400"
-            size={20}
+            size={18}
           />
           <input
             type="email"
@@ -76,14 +96,14 @@ const RegisterForm = () => {
             onChange={handleChange}
             required
             placeholder="Email Address"
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-red-600 focus:bg-white transition text-black placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-slate-900 focus:bg-white transition text-black placeholder:text-gray-400 text-sm"
           />
         </div>
 
         <div className="relative">
           <Lock
             className="absolute top-1/2 -translate-y-1/2 left-4 text-gray-400"
-            size={20}
+            size={18}
           />
           <input
             type="password"
@@ -92,20 +112,42 @@ const RegisterForm = () => {
             onChange={handleChange}
             required
             placeholder="Create Password"
-            className="w-full pl-12 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-red-600 focus:bg-white transition text-black placeholder:text-gray-400"
+            className="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-slate-900 focus:bg-white transition text-black placeholder:text-gray-400 text-sm"
+          />
+        </div>
+
+        <div className="relative">
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Phone Number (Optional)"
+            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-slate-900 focus:bg-white transition text-black placeholder:text-gray-400 text-sm"
+          />
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            placeholder="Address (Optional)"
+            className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:outline-none focus:border-slate-900 focus:bg-white transition text-black placeholder:text-gray-400 text-sm"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center group transition shadow-lg disabled:opacity-50"
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center group transition shadow-lg disabled:opacity-50 mt-2"
         >
           {loading ? "Creating..." : "Create Account"}
           {!loading && (
             <ArrowRight
               className="ml-2 group-hover:translate-x-1 transition-transform"
-              size={20}
+              size={18}
             />
           )}
         </button>
