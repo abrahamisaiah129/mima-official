@@ -112,22 +112,27 @@ router.post('/:userId/wishlist/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const product = await Product.findById(productId);
+        // Products use custom `id` field (Number), not _id
+        const product = await Product.findOne({ id: Number(productId) });
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        if (user.wishlist.includes(productId)) {
+        if (!user.wishlist) user.wishlist = [];
+
+        // Check duplicates using product._id (ObjectId stored in wishlist)
+        const exists = user.wishlist.some(id => id.toString() === product._id.toString());
+        if (exists) {
             return res.status(400).json({ message: 'Product already in wishlist' });
         }
 
-        user.wishlist.push(productId);
+        user.wishlist.push(product._id);
         await user.save();
 
         res.json(user.wishlist);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Wishlist Add Error:', err.message);
+        res.status(500).json({ message: 'Server error adding to wishlist', error: err.message });
     }
 });
 
@@ -141,13 +146,19 @@ router.delete('/:userId/wishlist/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
+        if (!user.wishlist) user.wishlist = [];
+
+        // Find product to get its _id for comparison
+        const product = await Product.findOne({ id: Number(productId) });
+        if (product) {
+            user.wishlist = user.wishlist.filter(id => id.toString() !== product._id.toString());
+        }
         await user.save();
 
         res.json(user.wishlist);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Wishlist Remove Error:', err.message);
+        res.status(500).json({ message: 'Server error removing from wishlist', error: err.message });
     }
 });
 
@@ -162,14 +173,18 @@ router.post('/:userId/cart/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const product = await Product.findById(productId);
+        // Products use custom `id` field (Number)
+        const product = await Product.findOne({ id: Number(productId) });
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        // Use product._id (ObjectId) for cart storage
+        const productObjId = product._id.toString();
+
         // Check if item exists (with same size/color if applicable)
         const cartItemIndex = user.cart.findIndex(item =>
-            item.product.toString() === productId &&
+            item.product.toString() === productObjId &&
             item.selectedSize === selectedSize &&
             item.selectedColor === selectedColor
         );
@@ -178,7 +193,7 @@ router.post('/:userId/cart/:productId', async (req, res) => {
             user.cart[cartItemIndex].quantity += quantity || 1;
         } else {
             user.cart.push({
-                product: productId,
+                product: product._id,
                 quantity: quantity || 1,
                 selectedSize,
                 selectedColor
@@ -186,14 +201,12 @@ router.post('/:userId/cart/:productId', async (req, res) => {
         }
 
         await user.save();
-
-        // Populate product details before returning
         await user.populate('cart.product');
 
         res.json(user.cart);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Cart Add Error:', err.message);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 
@@ -207,16 +220,18 @@ router.delete('/:userId/cart/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        user.cart = user.cart.filter(item => item.product.toString() !== productId);
+        // Find product to get its _id for comparison
+        const product = await Product.findOne({ id: Number(productId) });
+        if (product) {
+            user.cart = user.cart.filter(item => item.product.toString() !== product._id.toString());
+        }
         await user.save();
-
-        // Populate product details before returning
         await user.populate('cart.product');
 
         res.json(user.cart);
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Cart Remove Error:', err.message);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 
@@ -248,15 +263,21 @@ router.put('/:userId/cart/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Find product to get its _id for comparison
+        const product = await Product.findOne({ id: Number(productId) });
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+        const productObjId = product._id.toString();
+
         const cartItemIndex = user.cart.findIndex(item =>
-            item.product.toString() === productId &&
+            item.product.toString() === productObjId &&
             item.selectedSize === selectedSize &&
             item.selectedColor === selectedColor
         );
 
         if (cartItemIndex > -1) {
             if (quantity <= 0) {
-                // Remove item if quantity is 0 or less
                 user.cart.splice(cartItemIndex, 1);
             } else {
                 user.cart[cartItemIndex].quantity = quantity;
@@ -268,8 +289,8 @@ router.put('/:userId/cart/:productId', async (req, res) => {
             res.status(404).json({ message: 'Item not found in cart' });
         }
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server error');
+        console.error('Cart Update Error:', err.message);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 

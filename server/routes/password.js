@@ -1,115 +1,140 @@
-const express = require('express');
-const router = express.Router();
-const User = require('../models/User');
-const OTP = require('../models/OTP');
-const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const nodemailer = require("nodemailer");
+const User = require("../models/User");
+const OTP = require("../models/OTP");
 
-// @route   POST /send-otp
-// @desc    Send OTP to user's email
-// @access  Public
-router.post('/send-otp', async (req, res) => {
+const router = express.Router();
+
+// ============================
+// Create Email Transporter (Verified)
+// ============================
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com", // Or service: 'gmail'
+    port: 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+});
+
+// Verify transporter at server start
+transporter.verify((error) => {
+    if (error) {
+        console.error("  Email server not ready:", error);
+    } else {
+        console.log("  Email server ready to send OTP");
+    }
+});
+
+// ============================
+// SEND OTP
+// ============================
+router.post("/send-otp", async (req, res) => {
     try {
         const { email } = req.body;
 
         if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
+            return res.status(400).json({ message: "Email is required" });
         }
 
-        // Check email credentials are configured
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-            console.error("EMAIL_USER or EMAIL_PASS not configured in environment variables");
-            return res.status(500).json({ message: 'Email service is not configured. Please contact support.' });
-        }
+        const user = await User.findOne({ email: email.toLowerCase() });
 
-        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'No account found with that email' });
+            return res.status(400).json({ message: "No account found with that email" });
         }
 
         // Generate OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Send OTP via Email
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000
-        });
+        // Delete previous OTP
+        await OTP.deleteMany({ email });
 
+        // Save new OTP
+        await OTP.create({ email, otp });
+
+        // Email template
         const mailOptions = {
             from: `"MIMA Support" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: 'Password Reset OTP',
-            text: `Your OTP for password reset is: ${otp}. It expires in 10 minutes.`,
-            html: `<p>Your OTP for password reset is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`
+            subject: "Your Password Reset OTP",
+            html: `
+        <div style="font-family: Arial; padding:20px;">
+          <h2>Password Reset Request</h2>
+          <p>Use the OTP below to reset your password:</p>
+          <h1 style="letter-spacing:6px;">${otp}</h1>
+          <p>This OTP expires in <b>10 minutes</b>.</p>
+          <br/>
+          <small>If you did not request this, ignore this email.</small>
+        </div>
+      `,
         };
 
         await transporter.sendMail(mailOptions);
 
-        // Save OTP only after email is successfully sent
-        await OTP.deleteMany({ email });
-        const newOTP = new OTP({ email, otp });
-        await newOTP.save();
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent successfully to email",
+        });
 
-        res.json({ message: 'OTP sent to your email' });
+    } catch (error) {
+        console.error(" Send OTP Error:", error);
 
-    } catch (err) {
-        console.error("Send OTP Error:", err.message);
-        res.status(500).json({ message: 'Failed to send OTP. Please try again later.' });
+        return res.status(500).json({
+            success: false,
+            message: "Failed to send OTP. Try again.",
+        });
     }
 });
 
-// @route   POST /reset-password
-// @desc    Reset password with OTP
-// @access  Public
-router.post('/reset-password', async (req, res) => {
+// ============================
+// RESET PASSWORD
+// ============================
+router.post("/reset-password", async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
 
         if (!email || !otp || !newPassword) {
-            return res.status(400).json({ message: 'All fields are required' });
+            return res.status(400).json({ message: "All fields are required" });
         }
 
-        // Find matching OTP
-        const otpEntry = await OTP.findOne({ email, otp });
+        const otpRecord = await OTP.findOne({ email, otp });
 
-        if (!otpEntry) {
-            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        if (!otpRecord) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
         }
 
-        // Check expiration (assumes OTP model has timestamps enabled, which adds createdAt)
-        if (otpEntry.createdAt) {
-            const otpAge = Date.now() - new Date(otpEntry.createdAt).getTime();
-            if (otpAge > 10 * 60 * 1000) { // 10 minutes
-                await OTP.deleteOne({ _id: otpEntry._id });
-                return res.status(400).json({ message: 'Invalid or expired OTP' });
+        // Check expiration (10 mins) - Redundant if TTL index works, but safe to keep
+        if (otpRecord.createdAt) {
+            const isExpired = Date.now() - new Date(otpRecord.createdAt).getTime() > 10 * 60 * 1000;
+            if (isExpired) {
+                await OTP.deleteMany({ email });
+                return res.status(400).json({ message: "OTP expired" });
             }
         }
 
-        // Find user
         const user = await User.findOne({ email });
+
         if (!user) {
-            return res.status(400).json({ message: 'User not found' });
+            return res.status(400).json({ message: "User not found" });
         }
 
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        user.password = hashedPassword;
+
         await user.save();
 
-        // Clean up all OTPs for this email
         await OTP.deleteMany({ email });
 
-        res.json({ message: 'Password reset successful' });
-    } catch (err) {
-        console.error("Reset Password Error:", err);
-        res.status(500).json({ message: 'Server Error' });
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successful",
+        });
+
+    } catch (error) {
+        console.error(" Reset Password Error:", error);
+        return res.status(500).json({ message: "Server error" });
     }
 });
 

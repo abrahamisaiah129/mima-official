@@ -1,19 +1,27 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const OTPSchema = new mongoose.Schema({
-    email: {
-        type: String,
-        required: true,
+const OTPSchema = new mongoose.Schema(
+    {
+        email: {
+            type: String,
+            required: true,
+            lowercase: true,
+            trim: true,
+            index: true,
+        },
+        otp: {
+            type: String,
+            required: true,
+            minlength: 6,
+            maxlength: 6,
+        },
     },
-    otp: {
-        type: String,
-        required: true,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-        expires: 600, // 10 minutes
-    },
-});
+    {
+        timestamps: true, // Automatically adds createdAt
+    }
+);
 
-module.exports = mongoose.model('OTP', OTPSchema);
+// TTL Index: Automatically delete after 10 minutes
+OTPSchema.index({ createdAt: 1 }, { expireAfterSeconds: 600 });
+
+module.exports = mongoose.model("OTP", OTPSchema);
