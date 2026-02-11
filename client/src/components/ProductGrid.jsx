@@ -8,7 +8,7 @@ const ProductGrid = ({ products, addToCart, cartItems, removeFromCart, className
     >
       {products.map((product, index) => (
         <div
-          key={product.id}
+          key={product.id || product._id || index}
           className="w-full flex justify-center animate-slide-up"
           style={{ animationDelay: `${index * 0.1}s` }}
         >
@@ -25,7 +25,12 @@ const ProductGrid = ({ products, addToCart, cartItems, removeFromCart, className
             cartItems={cartItems}
             removeFromCart={removeFromCart}
             preSelectedSize={preSelectedSize}
-            isWishlisted={wishlistItems.some(item => item.id === product.id)}
+            isWishlisted={wishlistItems.some(item =>
+              (item.id && item.id === product.id) ||
+              (item._id && item._id === product._id) ||
+              (item._id === product.id) ||
+              (item.id === product._id)
+            )}
             toggleWishlist={() => toggleWishlist(product)}
           />
         </div>

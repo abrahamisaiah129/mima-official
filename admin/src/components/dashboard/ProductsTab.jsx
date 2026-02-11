@@ -216,7 +216,7 @@ const ProductsTab = ({ products, setProducts }) => {
                             p.title.toLowerCase().includes(searchTerm.toLowerCase()),
                         ), currentPage).map((product) => (
                             <tr
-                                key={product.id}
+                                key={product._id || product.id}
                                 className="hover:bg-white/5 transition-colors"
                             >
                                 <td className="p-6 flex items-center gap-4">
@@ -248,7 +248,7 @@ const ProductsTab = ({ products, setProducts }) => {
                                         <Edit2 size={14} /> Edit
                                     </button>
                                     <button
-                                        onClick={() => handleDeleteProduct(product.id)}
+                                        onClick={() => handleDeleteProduct(product._id || product.id)}
                                         className="text-red-500 hover:text-red-400 font-bold text-sm flex items-center gap-1"
                                     >
                                         <Trash2 size={14} /> Delete

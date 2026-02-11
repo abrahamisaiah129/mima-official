@@ -88,14 +88,14 @@ const SocialTab = () => {
             {/* Posts Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {posts.map((post) => (
-                    <div key={post.id} className="group relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-white/10">
+                    <div key={post._id || post.id} className="group relative aspect-square rounded-2xl overflow-hidden bg-zinc-900 border border-white/10">
                         <img src={post.image} alt={post.user} className="w-full h-full object-cover" />
 
                         {/* Overlay */}
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-4">
                             <div className="flex justify-end">
                                 <button
-                                    onClick={() => handleDeletePost(post.id)}
+                                    onClick={() => handleDeletePost(post._id || post.id)}
                                     className="bg-red-500/20 text-red-500 p-2 rounded-full hover:bg-red-500 hover:text-white transition"
                                 >
                                     <X size={16} />

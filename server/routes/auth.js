@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const User = require('../models/User');
 const Product = require('../models/Product');
@@ -10,13 +11,17 @@ const auth = require('../middleware/auth');
 router.get('/me', auth, async (req, res) => {
     try {
         // user.id from token is the custom string ID, not _id
-        const user = await User.findOne({ id: req.user.id }).select('-password');
+        const user = await User.findOne({ id: req.user.id })
+            .select('-password')
+            .populate('cart.product')
+            .populate('wishlist');
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
         res.json(user);
     } catch (err) {
-        console.error(err.message);
+        console.error("Fetch User Error:", err.message);
         res.status(500).send('Server Error');
     }
 });
@@ -36,8 +41,8 @@ router.post('/register', async (req, res) => {
             password,
             firstName,
             lastName,
-            phone,
-            address
+            phone: phone || "",
+            address: address || ""
         });
 
         const salt = await bcrypt.genSalt(10);
@@ -62,7 +67,7 @@ router.post('/register', async (req, res) => {
             }
         );
     } catch (err) {
-        console.error(err.message);
+        console.error("Register Error:", err.message);
         res.status(500).send('Server error');
     }
 });
@@ -97,7 +102,7 @@ router.post('/login', async (req, res) => {
             }
         );
     } catch (err) {
-        console.error(err.message);
+        console.error("Login Error:", err.message);
         res.status(500).send('Server error');
     }
 });
@@ -112,27 +117,32 @@ router.post('/:userId/wishlist/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Products use custom `id` field (Number), not _id
-        const product = await Product.findOne({ id: Number(productId) });
+        // Handle both numeric ID and MongoDB ObjectID
+        let product;
+        if (mongoose.Types.ObjectId.isValid(productId)) {
+            product = await Product.findById(productId);
+        } else {
+            product = await Product.findOne({ id: productId });
+        }
+
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        if (!user.wishlist) user.wishlist = [];
+        const realProductId = product._id;
 
-        // Check duplicates using product._id (ObjectId stored in wishlist)
-        const exists = user.wishlist.some(id => id.toString() === product._id.toString());
-        if (exists) {
+        if (user.wishlist.includes(realProductId)) {
             return res.status(400).json({ message: 'Product already in wishlist' });
         }
 
-        user.wishlist.push(product._id);
+        user.wishlist.push(realProductId);
         await user.save();
+        await user.populate('wishlist');
 
         res.json(user.wishlist);
     } catch (err) {
-        console.error('Wishlist Add Error:', err.message);
-        res.status(500).json({ message: 'Server error adding to wishlist', error: err.message });
+        console.error("Wishlist Add Error:", err.message);
+        res.status(500).send('Server error');
     }
 });
 
@@ -146,19 +156,30 @@ router.delete('/:userId/wishlist/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        if (!user.wishlist) user.wishlist = [];
-
-        // Find product to get its _id for comparison
-        const product = await Product.findOne({ id: Number(productId) });
-        if (product) {
-            user.wishlist = user.wishlist.filter(id => id.toString() !== product._id.toString());
+        // Resolve the product's real MongoDB _id (same approach as add)
+        let product;
+        if (mongoose.Types.ObjectId.isValid(productId)) {
+            product = await Product.findById(productId);
         }
+        if (!product) {
+            product = await Product.findOne({ id: productId });
+        }
+
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        const realProductId = product._id.toString();
+
+        user.wishlist = user.wishlist.filter(id => id.toString() !== realProductId);
+
         await user.save();
+        await user.populate('wishlist');
 
         res.json(user.wishlist);
     } catch (err) {
-        console.error('Wishlist Remove Error:', err.message);
-        res.status(500).json({ message: 'Server error removing from wishlist', error: err.message });
+        console.error("Wishlist Remove Error:", err.message);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
@@ -173,18 +194,23 @@ router.post('/:userId/cart/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Products use custom `id` field (Number)
-        const product = await Product.findOne({ id: Number(productId) });
+        // Handle both numeric ID and MongoDB ObjectID
+        let product;
+        if (mongoose.Types.ObjectId.isValid(productId)) {
+            product = await Product.findById(productId);
+        } else {
+            product = await Product.findOne({ id: productId });
+        }
+
         if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
-        // Use product._id (ObjectId) for cart storage
-        const productObjId = product._id.toString();
+        const realProductId = product._id;
 
         // Check if item exists (with same size/color if applicable)
         const cartItemIndex = user.cart.findIndex(item =>
-            item.product.toString() === productObjId &&
+            item.product.toString() === realProductId.toString() &&
             item.selectedSize === selectedSize &&
             item.selectedColor === selectedColor
         );
@@ -193,7 +219,7 @@ router.post('/:userId/cart/:productId', async (req, res) => {
             user.cart[cartItemIndex].quantity += quantity || 1;
         } else {
             user.cart.push({
-                product: product._id,
+                product: realProductId,
                 quantity: quantity || 1,
                 selectedSize,
                 selectedColor
@@ -201,12 +227,14 @@ router.post('/:userId/cart/:productId', async (req, res) => {
         }
 
         await user.save();
+
+        // Populate product details before returning
         await user.populate('cart.product');
 
         res.json(user.cart);
     } catch (err) {
-        console.error('Cart Add Error:', err.message);
-        res.status(500).json({ message: 'Server error', error: err.message });
+        console.error("Cart Add Error:", err.message);
+        res.status(500).send('Server error');
     }
 });
 
@@ -214,24 +242,37 @@ router.post('/:userId/cart/:productId', async (req, res) => {
 router.delete('/:userId/cart/:productId', async (req, res) => {
     try {
         const { userId, productId } = req.params;
+        const { selectedSize, selectedColor } = req.query; // Allow specific removal
 
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Find product to get its _id for comparison
-        const product = await Product.findOne({ id: Number(productId) });
-        if (product) {
-            user.cart = user.cart.filter(item => item.product.toString() !== product._id.toString());
+        // Resolve product _id if needed
+        let realProductId = productId;
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            const product = await Product.findOne({ id: productId });
+            if (product) realProductId = product._id;
         }
+
+        user.cart = user.cart.filter(item => {
+            const match = item.product.toString() === realProductId.toString();
+            if (selectedSize && selectedColor) {
+                return !(match && item.selectedSize === selectedSize && item.selectedColor === selectedColor);
+            }
+            return !match;
+        });
+
         await user.save();
+
+        // Populate product details before returning
         await user.populate('cart.product');
 
         res.json(user.cart);
     } catch (err) {
-        console.error('Cart Remove Error:', err.message);
-        res.status(500).json({ message: 'Server error', error: err.message });
+        console.error("Cart Remove Error:", err.message);
+        res.status(500).send('Server error');
     }
 });
 
@@ -247,7 +288,7 @@ router.get('/:userId/cart', async (req, res) => {
 
         res.json(user.cart);
     } catch (err) {
-        console.error(err.message);
+        console.error("Cart Fetch Error:", err.message);
         res.status(500).send('Server error');
     }
 });
@@ -263,21 +304,22 @@ router.put('/:userId/cart/:productId', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Find product to get its _id for comparison
-        const product = await Product.findOne({ id: Number(productId) });
-        if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+        // Resolve product _id if needed
+        let realProductId = productId;
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            const product = await Product.findOne({ id: productId });
+            if (product) realProductId = product._id.toString();
         }
-        const productObjId = product._id.toString();
 
         const cartItemIndex = user.cart.findIndex(item =>
-            item.product.toString() === productObjId &&
+            item.product.toString() === realProductId &&
             item.selectedSize === selectedSize &&
             item.selectedColor === selectedColor
         );
 
         if (cartItemIndex > -1) {
             if (quantity <= 0) {
+                // Remove item if quantity is 0 or less
                 user.cart.splice(cartItemIndex, 1);
             } else {
                 user.cart[cartItemIndex].quantity = quantity;
@@ -289,8 +331,8 @@ router.put('/:userId/cart/:productId', async (req, res) => {
             res.status(404).json({ message: 'Item not found in cart' });
         }
     } catch (err) {
-        console.error('Cart Update Error:', err.message);
-        res.status(500).json({ message: 'Server error', error: err.message });
+        console.error(err.message);
+        res.status(500).send('Server error');
     }
 });
 

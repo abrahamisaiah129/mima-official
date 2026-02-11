@@ -34,51 +34,34 @@ export const ShopProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
     const [wishlistItems, setWishlistItems] = useState([]);
 
-    // Helper to normalize cart data
+    // Helper to normalize cart data (Flatten populated product)
     const normalizeCart = (cartData) => {
         if (!cartData) return [];
         return cartData.map(item => {
-            // Check if product is populated (object) or just ID
-            if (item.product && typeof item.product === 'object' && item.product.title) {
+            if (item.product && typeof item.product === 'object') {
                 return {
                     ...item.product,
+                    // Ensure we have both ID types for compatibility
+                    id: item.product.id,
+                    _id: item.product._id,
                     quantity: item.quantity,
                     selectedSize: item.selectedSize,
                     selectedColor: item.selectedColor
                 };
             }
-            // If it's just ID, try to find in local products
-            if (products.length > 0) {
-                const found = products.find(p => p.id === item.product || p._id === item.product);
-                if (found) {
-                    return {
-                        ...found,
-                        quantity: item.quantity,
-                        selectedSize: item.selectedSize,
-                        selectedColor: item.selectedColor
-                    };
-                }
-            }
-            return item;
-        }).filter(item => item && item.title);
+            return null;
+        }).filter(Boolean);
     };
 
     useEffect(() => {
         if (user) {
-            const formattedCart = normalizeCart(user.cart || []);
-            setCartItems(formattedCart);
+            setCartItems(normalizeCart(user.cart || []));
             setWishlistItems(user.wishlist || []);
         } else {
             setCartItems([]);
             setWishlistItems([]);
         }
-    }, [user, products]); // Re-run when products load to hydrate cart
-
-    // Helper to find product _id from numeric id (if needed)
-    const getProductId = (id) => {
-        const found = products.find(p => p.id === id || p._id === id);
-        return found ? found._id : id;
-    };
+    }, [user]);
 
     // Wishlist Logic
     const toggleWishlist = async (product) => {
@@ -87,43 +70,22 @@ export const ShopProvider = ({ children }) => {
             return;
         }
 
-        const realId = getProductId(product.id);
-        const exists = wishlistItems.find((item) => item._id === realId || item.id === product.id);
+        const productId = product._id || product.id;
+        const exists = wishlistItems.some(item => (item._id || item) === productId || item.id === productId);
 
-        // Optimistic update could be tricky with IDs, so let's rely on server response or careful state manip
-        // But for now, let's just make the API call work.
-
-        // Actually, the wishlist items in user context might be full objects or just IDs depending on population.
-        // auth.js: returns user.wishlist (array of IDs usually, but let's check auth.js)
-        // auth.js /:userId/wishlist/:productId returns user.wishlist (IDs)
-        // ShopContext useEffect: setWishlistItems(user.wishlist || [])
-
-        // Wait, if user.wishlist is just IDs, finding `item._id` won't work in `exists`.
-        // Let's check how user is loaded. UserContext likely fetches /auth/me which might populate?
-        // auth.js /me: `User.findOne...` (no populate). So user.wishlist is likely IDs (Strings/ObjectIds).
-
-        if (exists || (wishlistItems.includes(realId) || wishlistItems.some(i => i._id === realId))) {
-            try {
-                await api.delete(`/auth/${user._id}/wishlist/${realId}`);
-                setWishlistItems((prev) => prev.filter((item) => (item._id || item) !== realId));
+        try {
+            if (exists) {
+                const res = await api.delete(`/auth/${user._id}/wishlist/${productId}`);
+                setWishlistItems(res.data);
                 notify("info", "Removed from Wishlist", "Item removed.");
-            } catch (error) {
-                console.error("Failed to remove from wishlist", error);
-                notify("error", "Error", "Failed to remove from wishlist.");
-            }
-        } else {
-            try {
-                await api.post(`/auth/${user._id}/wishlist/${realId}`);
-                // We need to add the full product to state if we want to display it
-                // But if wishlistState is just IDs, we add ID.
-                // Let's assume for now it's mixed or we re-fetch user.
-                // Simpler: Just refresh user or add what we have.
-                setWishlistItems((prev) => [...prev, product]);
+            } else {
+                const res = await api.post(`/auth/${user._id}/wishlist/${productId}`);
+                setWishlistItems(res.data);
                 notify("success", "Added to Wishlist", "Saved for later.");
-            } catch (error) {
-                console.error("Failed to add to wishlist", error);
-                notify("error", "Error", "Failed to add to wishlist.");
             }
+        } catch (error) {
+            console.error("Failed to toggle wishlist", error);
+            notify("error", "Error", "Failed to update wishlist.");
         }
     };
 
@@ -134,17 +96,10 @@ export const ShopProvider = ({ children }) => {
             return;
         }
 
-        const realId = getProductId(product.id);
-
-        // Check live stock before adding
-        const currentProduct = products.find(p => p.id === product.id || p._id === realId);
-        if (currentProduct && currentProduct.stock <= 0) {
-            notify("error", "Out of Stock", "Sorry, this item is currently unavailable.");
-            return;
-        }
+        const productId = product._id || product.id;
 
         try {
-            const res = await api.post(`/auth/${user._id}/cart/${realId}`, {
+            const res = await api.post(`/auth/${user._id}/cart/${productId}`, {
                 quantity: product.quantity || 1,
                 selectedSize: product.selectedSize,
                 selectedColor: product.selectedColor
@@ -158,12 +113,17 @@ export const ShopProvider = ({ children }) => {
         }
     };
 
-    const removeFromCart = async (productId) => {
+    const removeFromCart = async (productId, selectedSize, selectedColor) => {
         if (!user) return;
-        const realId = getProductId(productId);
 
         try {
-            const res = await api.delete(`/auth/${user._id}/cart/${realId}`);
+            // Build query params for specific removal if provided
+            let url = `/auth/${user._id}/cart/${productId}`;
+            if (selectedSize && selectedColor) {
+                url += `?selectedSize=${selectedSize}&selectedColor=${encodeURIComponent(selectedColor)}`;
+            }
+
+            const res = await api.delete(url);
             setCartItems(normalizeCart(res.data));
             notify("info", "Item Removed", "Item removed from your cart.");
         } catch (error) {
@@ -174,9 +134,12 @@ export const ShopProvider = ({ children }) => {
 
     const updateQuantity = async (productId, quantity, selectedSize, selectedColor) => {
         if (!user) return;
-        const realId = getProductId(productId);
         try {
-            const res = await api.put(`/auth/${user._id}/cart/${realId}`, { quantity, selectedSize, selectedColor });
+            const res = await api.put(`/auth/${user._id}/cart/${productId}`, {
+                quantity,
+                selectedSize,
+                selectedColor
+            });
             setCartItems(normalizeCart(res.data));
         } catch (error) {
             console.error("Failed to update quantity", error);
@@ -207,21 +170,7 @@ export const ShopProvider = ({ children }) => {
         }
     };
 
-    // ADD FUNDS
-    const addFunds = async (amount) => {
-        try {
-            const res = await api.patch(`/users/${user._id}/add-funds`, { amount });
-            if (res.status === 200) {
-                updateUser(res.data);
-                notify("success", "Funds Added", `Successfully added $${amount} to your account.`);
-            } else {
-                notify("error", "Failed to Add Funds", "An error occurred.");
-            }
-        } catch (error) {
-            console.error("Failed to add funds", error);
-            notify("error", "Error", error.response?.data?.message || "Failed to add funds.");
-        }
-    };
+    // ... (addFunds removed - handled by UserContext)
 
     return (
         <ShopContext.Provider value={{
@@ -232,8 +181,7 @@ export const ShopProvider = ({ children }) => {
             removeFromCart,
             updateQuantity,
             toggleWishlist,
-            processCheckout,
-            addFunds
+            processCheckout
         }}>
             {children}
         </ShopContext.Provider>

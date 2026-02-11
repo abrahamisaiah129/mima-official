@@ -56,38 +56,10 @@ router.post('/send', async (req, res) => {
 
         const recipientEmails = subscribers.map(s => s.email);
 
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            const nodemailer = require('nodemailer');
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
-                }
-            });
+        const { sendNewsletter } = require('../utils/mailer');
+        await sendNewsletter(recipientEmails, subject, message);
+        res.json({ success: true, message: `Newsletter sent to ${subscribers.length} subscribers!` });
 
-            const mailOptions = {
-                from: `"Newsletter" <${process.env.EMAIL_USER}>`,
-                to: 'Undisclosed recipients: ;',  // Standard BCC trick
-                bcc: recipientEmails,             // Hides recipient list (privacy)
-                subject: subject,
-                text: message,
-                html: `<p>${message.replace(/\n/g, '<br>')}</p>`
-            };
-
-            const info = await transporter.sendMail(mailOptions);
-            console.log("Message sent: %s", info.messageId);
-            res.json({ success: true, message: `Newsletter sent to ${subscribers.length} subscribers!` });
-        } else {
-            // Mock send
-            console.log("---------------------------------------------------");
-            console.log("MOCK EMAIL SEND (Missing EMAIL_USER/EMAIL_PASS in .env)");
-            console.log(`BCC To: ${recipientEmails.join(', ')}`);
-            console.log(`Subject: ${subject}`);
-            console.log(`Message: ${message}`);
-            console.log("---------------------------------------------------");
-            res.json({ success: true, message: `(Mock) Newsletter sent to ${subscribers.length} subscribers! Check server console.` });
-        }
 
     } catch (err) {
         console.error("Newsletter send error:", err);

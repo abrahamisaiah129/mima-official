@@ -41,10 +41,10 @@ const Wishlist = () => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-x-[2px] gap-y-6 sm:gap-6">
-                {wishlistItems.map((item) => (
+                {wishlistItems.map((item, index) => (
                     <Card
-                        key={item.id}
-                        id={item.id}
+                        key={item.id || item._id || index}
+                        id={item.id || item._id}
                         title={item.title}
                         description={item.description}
                         imageSrc={item.imageSrc}

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Wallet, CreditCard, Lock, X } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { useShop } from "../context/ShopContext";
-import { usePaystackPayment } from "react-paystack";
+import { PaystackButton } from "react-paystack";
 
 const PaymentModal = ({ isOpen, onClose, total }) => {
     if (!isOpen) return null;
@@ -17,16 +17,14 @@ const PaymentModal = ({ isOpen, onClose, total }) => {
     const { notify } = useNotification();
     const navigate = useNavigate();
 
-    const config = {
-        reference: (new Date()).getTime().toString(),
+    const config = useMemo(() => ({
+        reference: `ORD-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
         email: user?.email || "guest@example.com",
-        amount: total * 100, // Amount in kobo
+        amount: Math.round(total * 100), // Amount in kobo
         publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "",
-    };
+    }), [total, user?.email, isOpen]);
 
-    const initializePayment = usePaystackPayment(config);
-
-    const onSuccess = async (reference) => {
+    const onPaystackSuccess = useCallback(async (reference) => {
         console.log("Paystack success:", reference);
         try {
             await processCheckout({
@@ -37,15 +35,14 @@ const PaymentModal = ({ isOpen, onClose, total }) => {
             onClose();
             navigate("/");
         } catch (err) {
-            // processCheckout already shows error notification
             setIsProcessing(false);
         }
-    };
+    }, [processCheckout, notify, onClose, navigate]);
 
-    const onClosePaystack = () => {
+    const onPaystackClose = useCallback(() => {
         console.log('Paystack dialog closed');
         setIsProcessing(false);
-    };
+    }, []);
 
     const handlePay = async () => {
         if (paymentMethod === "wallet") {
@@ -68,10 +65,6 @@ const PaymentModal = ({ isOpen, onClose, total }) => {
                 // processCheckout already shows error notification
                 setIsProcessing(false);
             }
-        } else {
-            // PAYSTACK FLOW
-            setIsProcessing(true);
-            initializePayment(onSuccess, onClosePaystack);
         }
     };
 
@@ -130,9 +123,9 @@ const PaymentModal = ({ isOpen, onClose, total }) => {
                         )}
                     </div>
 
-                    {/* Card Option */}
+                    {/* Paystack Option */}
                     <label
-                        className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "paystack"
                             ? "border-black bg-gray-50"
                             : "border-gray-100 hover:border-gray-200"
                             }`}
@@ -141,9 +134,9 @@ const PaymentModal = ({ isOpen, onClose, total }) => {
                             <input
                                 type="radio"
                                 name="payment"
-                                value="card"
-                                checked={paymentMethod === "card"}
-                                onChange={() => setPaymentMethod("card")}
+                                value="paystack"
+                                checked={paymentMethod === "paystack"}
+                                onChange={() => setPaymentMethod("paystack")}
                                 className="text-black focus:ring-black"
                             />
                             <span className="ml-3 font-bold text-slate-900 flex items-center gap-2">
@@ -153,14 +146,25 @@ const PaymentModal = ({ isOpen, onClose, total }) => {
                     </label>
 
                     {/* Action Button */}
-                    <button
-                        onClick={handlePay}
-                        disabled={isProcessing || (paymentMethod === "wallet" && user?.balance < total)}
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all mt-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {isProcessing ? "Processing..." : `Pay ₦${total.toLocaleString()}`}
-                        <Lock size={16} />
-                    </button>
+                    {/* Action Button */}
+                    {paymentMethod === 'paystack' ? (
+                        <PaystackButton
+                            {...config}
+                            text={isProcessing ? "Processing..." : `Pay ₦${total.toLocaleString()}`}
+                            onSuccess={onPaystackSuccess}
+                            onClose={onPaystackClose}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all mt-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        />
+                    ) : (
+                        <button
+                            onClick={handlePay}
+                            disabled={isProcessing || (paymentMethod === "wallet" && user?.balance < total)}
+                            className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all mt-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? "Processing..." : `Pay ₦${total.toLocaleString()}`}
+                            <Lock size={16} />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

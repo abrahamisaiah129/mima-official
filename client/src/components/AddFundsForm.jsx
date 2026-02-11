@@ -1,55 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { CreditCard, Lock } from "lucide-react";
 import { useNotification } from "../context/NotificationContext";
 import { useUser } from "../context/UserContext";
-import { usePaystackPayment } from "react-paystack";
+import { PaystackButton } from "react-paystack";
 
-/**
- * Add Funds Component
- * -------------------
- * This is where you integrate Paystack/Flutterwave.
- * 
- * TO CONFIGURE PAYMENT:
- * 1. Get your Public Key from Paystack Dashboard.
- * 2. Install paystack lib: `npm install react-paystack`
- * 3. Use the hook: `usePaystackPayment(config)`
- * 4. On the `onSuccess` callback, call your backend API to credit the user's wallet.
- */
-
-const AddFundsForm = () => {
+const AddFundsForm = ({ onSuccess }) => {
   const [amount, setAmount] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const { notify } = useNotification();
-  const { user, addFunds } = useUser();
+  const { user, verifyPayment } = useUser();
 
-  const config = {
-    reference: (new Date()).getTime().toString(),
+  // 1. Stable reference for the transaction
+  const [transactionRef] = useState(`TOPUP-${Date.now()}-${Math.floor(Math.random() * 1000000)}`);
+
+  // 2. Configuration for PaystackButton
+  const componentProps = useMemo(() => ({
+    reference: transactionRef,
     email: user?.email || "user@example.com",
-    amount: amount * 100, // Paystack uses kobo (100 kobo = 1 Naira)
+    amount: (Number(amount) || 0) * 100, // kobo
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "",
-  };
+    text: isProcessing ? "Processing..." : "Pay Securely",
+    onSuccess: (response) => {
+      console.log("Paystack Success Captured by Button Component", response);
+      handleSuccess(response);
+    },
+    onClose: () => {
+      notify("info", "Cancelled", "Transaction stopped.");
+    },
+  }), [transactionRef, user?.email, amount, isProcessing]);
 
-  const initializePayment = usePaystackPayment(config);
+  // 3. Success Handler
+  const handleSuccess = async (response) => {
+    setIsProcessing(true);
+    notify("info", "Payment Confirmed", "Updating your wallet balance...");
 
-  const onSuccess = async (reference) => {
-    notify("info", "Payment Verified", "Adding funds to your wallet...");
-    const numAmount = parseInt(amount);
-    const res = await addFunds(numAmount);
+    try {
+      const numAmount = Number(amount);
+      console.log("Verifying with Backend:", { amount: numAmount, reference: response.reference });
 
-    if (res.success) {
-      notify("success", "Top Up Successful", `₦${numAmount.toLocaleString()} added to wallet.`);
-      setAmount("");
-    } else {
-      notify("error", "Transaction Failed", res.message);
+      const res = await verifyPayment(numAmount, response.reference);
+
+      if (res.success) {
+        notify("success", "Success", `₦${numAmount.toLocaleString()} added to your wallet.`);
+        setAmount("");
+        if (onSuccess) onSuccess();
+      } else {
+        notify("error", "Sync Error", res.message);
+      }
+    } catch (error) {
+      console.error("Critical Verification Error", error);
+      notify("error", "System Error", "Connection lost during verification.");
+    } finally {
+      setIsProcessing(false);
     }
-  };
-
-  const onClose = () => {
-    notify("info", "Transaction Cancelled", "You cancelled the payment.");
-  }
-
-  const handlePayment = () => {
-    if (!amount) return;
-    initializePayment(onSuccess, onClose);
   };
 
   return (
@@ -62,7 +65,7 @@ const AddFundsForm = () => {
           Fund Your Wallet
         </h3>
         <p className="text-sm text-gray-500 mt-2">
-          Enter an amount to top up securely.
+          Payments are instant and secured via Paystack.
         </p>
       </div>
 
@@ -76,23 +79,22 @@ const AddFundsForm = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="e.g. 10000"
+              placeholder="e.g. 5000"
               className="w-full px-4 py-4 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition font-bold text-lg text-center"
             />
           </div>
         </div>
 
-        <button
-          onClick={handlePayment}
-          className="w-full bg-white hover:bg-gray-200 text-black py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center space-x-2 transition shadow-lg shadow-white/10 active:scale-[0.98]"
-        >
-          <Lock size={16} />
-          <span>Pay Securely</span>
-        </button>
+        {/* Using the Official PaystackButton for better event handling */}
+        <PaystackButton
+          {...componentProps}
+          disabled={isProcessing || !amount}
+          className={`w-full bg-white hover:bg-gray-200 text-black py-4 rounded-xl font-black uppercase tracking-widest flex items-center justify-center space-x-2 transition shadow-lg shadow-white/10 active:scale-[0.98] disabled:opacity-50`}
+        />
 
         <div className="flex items-center justify-center gap-2 text-xs text-gray-500 mt-4 bg-white/5 py-2 rounded-lg">
           <Lock size={12} />
-          <span>Secured by Paystack / Flutterwave</span>
+          <span>Secured Encryption (PCI-DSS)</span>
         </div>
       </div>
     </div>

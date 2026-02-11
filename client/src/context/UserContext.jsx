@@ -108,10 +108,14 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    const addFunds = async (amount) => {
+    const addFunds = async (amount, reference, method) => {
         if (!user) return { success: false, message: "Not logged in" };
         try {
-            const res = await api.patch(`/users/${user._id}/add-funds`, { amount });
+            const res = await api.patch(`/users/${user._id}/add-funds`, {
+                amount,
+                reference,
+                method
+            });
             setUser(res.data);
             return { success: true, message: "Funds added successfully" };
         } catch (error) {
@@ -120,12 +124,27 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    const verifyPayment = async (amount, reference) => {
+        if (!user) return { success: false, message: "Not logged in" };
+        try {
+            const res = await api.post(`/users/verify-payment`, {
+                amount,
+                reference
+            });
+            setUser(res.data.user);
+            return { success: true, message: res.data.message };
+        } catch (error) {
+            console.error("Verify Payment Error", error);
+            return { success: false, message: error.response?.data?.message || "Failed to verify payment" };
+        }
+    };
+
     const updateUser = (updatedUser) => {
         setUser(updatedUser);
     };
 
     return (
-        <UserContext.Provider value={{ user, token, loading, login, register, requestOTP, resetPassword, logout, updateProfile, addFunds, updateUser, loadUser }}>
+        <UserContext.Provider value={{ user, token, loading, login, register, requestOTP, resetPassword, logout, updateProfile, addFunds, verifyPayment, updateUser, loadUser }}>
             {children}
         </UserContext.Provider>
     );

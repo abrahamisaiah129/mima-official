@@ -46,7 +46,7 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (user?.phone) {
+    if (user && user.phone) {
       try {
         // Defaulting to NG for parsing if not international format, assuming user base
         const phoneNumber = parsePhoneNumber(user.phone, "NG");

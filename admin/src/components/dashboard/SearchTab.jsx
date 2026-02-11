@@ -42,7 +42,7 @@ const SearchTab = () => {
                             </thead>
                             <tbody className="text-sm">
                                 {searches.map((term, i) => (
-                                    <tr key={i} className="border-b border-white/5 hover:bg-white/5 transition">
+                                    <tr key={term.term} className="border-b border-white/5 hover:bg-white/5 transition">
                                         <td className="py-4 font-bold text-white">{term.term}</td>
                                         <td className="py-4 text-right text-gray-400">{term.count}</td>
                                         <td className="py-4 text-right text-gray-500">{new Date(term.lastSearched).toLocaleDateString()}</td>

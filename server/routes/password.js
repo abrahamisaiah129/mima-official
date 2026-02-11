@@ -1,32 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const OTP = require("../models/OTP");
+const { sendOTP } = require("../utils/mailer");
 
 const router = express.Router();
 
-// ============================
-// Create Email Transporter (Verified)
-// ============================
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com", // Or service: 'gmail'
-    port: 587,
-    secure: false, // true for 465, false for other ports
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-
-// Verify transporter at server start
-transporter.verify((error) => {
-    if (error) {
-        console.error("  Email server not ready:", error);
-    } else {
-        console.log("  Email server ready to send OTP");
-    }
-});
 
 // ============================
 // SEND OTP
@@ -54,24 +33,7 @@ router.post("/send-otp", async (req, res) => {
         // Save new OTP
         await OTP.create({ email, otp });
 
-        // Email template
-        const mailOptions = {
-            from: `"MIMA Support" <${process.env.EMAIL_USER}>`,
-            to: email,
-            subject: "Your Password Reset OTP",
-            html: `
-        <div style="font-family: Arial; padding:20px;">
-          <h2>Password Reset Request</h2>
-          <p>Use the OTP below to reset your password:</p>
-          <h1 style="letter-spacing:6px;">${otp}</h1>
-          <p>This OTP expires in <b>10 minutes</b>.</p>
-          <br/>
-          <small>If you did not request this, ignore this email.</small>
-        </div>
-      `,
-        };
-
-        await transporter.sendMail(mailOptions);
+        await sendOTP(email, otp);
 
         return res.status(200).json({
             success: true,

@@ -24,9 +24,9 @@ const InstagramFeed = () => {
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-8 px-4 scrollbar-hide snap-x">
-        {posts.map((post) => (
+        {posts.map((post, index) => (
           <a
-            key={post.id}
+            key={post.id || post._id || index}
             href={post.link}
             target="_blank"
             rel="noopener noreferrer"

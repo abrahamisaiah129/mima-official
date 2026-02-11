@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Wallet, CreditCard, MapPin, Lock } from "lucide-react"; // Added Lock
 import { useUser } from "../context/UserContext";
 import { useShop } from "../context/ShopContext";
 import { useNotification } from "../context/NotificationContext";
 import { useNavigate } from "react-router-dom";
-import { usePaystackPayment } from "react-paystack"; // Import Paystack hook
+import { PaystackButton } from "react-paystack"; // Import Paystack Button component
 
 const CheckoutForm = () => {
   const { user, loading } = useUser();
@@ -54,36 +54,61 @@ const CheckoutForm = () => {
 
   // Calculate Totals
   const subtotal = cartItems.reduce((acc, item) => acc + (Number(item.price) * Number(item.quantity)), 0);
-  const shipping = 2500;
+  const shipping = Number(import.meta.env.VITE_SHIPPING_FEE) || 2500;
   const orderTotal = subtotal + shipping;
 
-  // Paystack Configuration
-  const config = {
-    reference: (new Date()).getTime().toString(),
+  // 1. Stable Transaction Reference
+  const [transactionRef] = useState(`ORD-${Date.now()}-${Math.floor(Math.random() * 1000000)}`);
+
+  // 2. Memoize Paystack Configuration
+  const config = useMemo(() => ({
+    reference: transactionRef,
     email: user?.email || "guest@example.com",
-    amount: orderTotal * 100, // Amount in kobo
+    amount: Math.round(orderTotal * 100), // Ensure integer for kobo
     publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "",
-  };
+  }), [transactionRef, user?.email, orderTotal]);
 
   const initializePayment = usePaystackPayment(config);
 
-  const onPaystackSuccess = async (reference) => {
-    try {
-      await processCheckout({
-        paymentMethod: 'paystack',
-        reference: reference.reference,
-        shippingDetails: shippingInfo
-      });
-      notify("success", "Payment Successful", `Ref: ${reference.reference}`);
+  // 3. Memoize the Success Callback
+  const onPaystackSuccess = useCallback(async (response) => {
+    console.log("Paystack Order Success:", response);
+    notify("info", "Processing", "Verifying your order with our server...");
+
+    const isSuccess = response.status === "success" ||
+      response.message === "Success" ||
+      response.response === "Approved" ||
+      response.status === "successful";
+
+    const isPending = response.status === "pending" ||
+      response.status === "processing";
+
+    if (isSuccess) {
+      setIsProcessing(true);
+      try {
+        await processCheckout({
+          paymentMethod: 'paystack',
+          reference: response.reference,
+          shippingDetails: shippingInfo
+        });
+        navigate("/");
+      } catch (err) {
+        console.error("Order processing failed", err);
+        setIsProcessing(false);
+      }
+    } else if (isPending) {
+      notify("info", "Payment Pending", "Your payment is being processed. We will notify you once confirmed.");
       navigate("/");
-    } catch (err) {
+    } else {
+      notify("error", "Payment Failed", response.message || "Unable to complete payment.");
       setIsProcessing(false);
     }
-  };
+  }, [processCheckout, shippingInfo, navigate, notify]);
 
-  const onPaystackClose = () => {
+  const onPaystackClose = useCallback(() => {
     setIsProcessing(false);
-  };
+    notify("info", "Cancelled", "Payment session closed.");
+  }, [notify]);
 
   const handlePay = async () => {
     if (cartItems.length === 0) {
@@ -223,9 +248,9 @@ const CheckoutForm = () => {
             </div>
           </label>
 
-          {/* Card Option (Disabled visual) */}
+          {/* Paystack Option */}
           <label
-            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "card"
+            className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "paystack"
               ? "border-red-600 bg-red-50"
               : "border-gray-100 hover:border-gray-200"
               }`}
@@ -234,13 +259,13 @@ const CheckoutForm = () => {
               <input
                 type="radio"
                 name="payment"
-                value="card"
-                checked={paymentMethod === "card"}
-                onChange={() => setPaymentMethod("card")}
+                value="paystack"
+                checked={paymentMethod === "paystack"}
+                onChange={() => setPaymentMethod("paystack")}
                 className="text-red-600 focus:ring-red-500"
               />
               <span className="ml-3 font-bold text-slate-900">
-                Debit / Credit Card
+                Debit / Credit Card (via Paystack)
               </span>
             </div>
             <div className="flex space-x-2">
@@ -251,14 +276,25 @@ const CheckoutForm = () => {
         </div>
       </div>
 
-      {/* Pay Button */}
-      <button
-        onClick={handlePay}
-        disabled={isProcessing || (paymentMethod === "wallet" && walletBalance < orderTotal) || cartItems.length === 0}
-        className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-        {isProcessing ? "Processing..." : `Pay ₦${orderTotal.toLocaleString()}`}
-        {!isProcessing && <Lock size={16} />}
-      </button>
+      {/* Pay Button / Paystack Action */}
+      {paymentMethod === 'paystack' ? (
+        <PaystackButton
+          {...config}
+          onSuccess={onPaystackSuccess}
+          onClose={onPaystackClose}
+          disabled={isProcessing || cartItems.length === 0}
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          text={isProcessing ? "Processing..." : `Pay ₦${orderTotal.toLocaleString()}`}
+        />
+      ) : (
+        <button
+          onClick={handlePay}
+          disabled={isProcessing || (paymentMethod === "wallet" && walletBalance < orderTotal) || cartItems.length === 0}
+          className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          {isProcessing ? "Processing..." : `Pay ₦${orderTotal.toLocaleString()}`}
+          {!isProcessing && <Lock size={16} />}
+        </button>
+      )}
 
       {/* Wallet Balance Warning */}
       {paymentMethod === "wallet" && walletBalance < orderTotal && (

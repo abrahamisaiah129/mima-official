@@ -39,8 +39,10 @@ const Wallet = () => {
     );
   }
 
-  // Get recent transactions from user context
-  const transactions = user.transactions ? user.transactions.slice(0, 5) : [];
+  // Get recent transactions from user context, sorted by date (descending)
+  const transactions = user.transactions
+    ? [...user.transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 10)
+    : [];
 
   return (
     <div className="bg-zinc-900 rounded-2xl shadow-sm border border-zinc-800 overflow-hidden">
@@ -81,7 +83,7 @@ const Wallet = () => {
           {transactions.length > 0 ? (
             transactions.map((txn) => (
               <WalletTransaction
-                key={txn.id}
+                key={txn._id || txn.reference}
                 data={txn}
                 onClick={() => setSelectedTransaction(txn)}
               />
@@ -103,7 +105,7 @@ const Wallet = () => {
             >
               ✕
             </button>
-            <AddFundsForm />
+            <AddFundsForm onSuccess={() => setShowAddFunds(false)} />
           </div>
         </div>
       )}

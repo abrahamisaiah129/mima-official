@@ -67,7 +67,7 @@ const CartItem = ({ item, removeFromCart, updateQuantity }) => {
           {/* Delete Button */}
           <button
             onClick={() =>
-              removeFromCart(item.id)
+              removeFromCart(item.id || item._id, item.selectedSize, item.selectedColor)
             }
             className="group flex items-center gap-1 text-gray-400 hover:text-red-600 transition px-2 py-1 rounded-md hover:bg-red-50 text-sm font-medium"
           >

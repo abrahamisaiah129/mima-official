@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 
 const OrderSummary = ({ subtotal }) => {
-  const shipping = 2500;
+  const shipping = Number(import.meta.env.VITE_SHIPPING_FEE) || 2500;
   const total = subtotal + shipping;
   const navigate = useNavigate();
   const { user } = useUser();

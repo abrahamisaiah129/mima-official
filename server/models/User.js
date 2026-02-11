@@ -10,13 +10,18 @@ const transactionSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    status: {
+        type: String,
+        enum: ['SUCCESS', 'FAILED', 'PENDING'],
+        default: 'SUCCESS'
+    },
     date: {
         type: Date,
         default: Date.now
     },
     items: [Object],
     method: { type: String, default: 'wallet' },
-    reference: String
+    reference: { type: String, sparse: true }
 });
 
 const userSchema = new mongoose.Schema({

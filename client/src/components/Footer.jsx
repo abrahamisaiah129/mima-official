@@ -1,12 +1,29 @@
-import React, { useState } from "react";
-import { Instagram, Twitter, Facebook, Mail } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Instagram, Twitter, Facebook, Mail, Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useNotification } from "../context/NotificationContext";
+import { useUser } from "../context/UserContext";
 import api from "../api";
 
 const Footer = () => {
   const [email, setEmail] = useState("");
   const { notify } = useNotification();
+  const { user } = useUser();
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Check if logged-in user is already subscribed
+  useEffect(() => {
+    if (user?.email) {
+      api.get("/newsletters")
+        .then((res) => {
+          const data = res.data;
+          if (Array.isArray(data) && data.includes(user.email)) {
+            setIsSubscribed(true);
+          }
+        })
+        .catch((err) => console.error("Failed to check subscription", err));
+    }
+  }, [user]);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -15,11 +32,13 @@ const Footer = () => {
         await api.post("/newsletter", { email });
         notify("success", "Subscribed!", "You've successfully joined the MIMA community.");
         setEmail("");
+        setIsSubscribed(true);
       } catch (error) {
         const errorMsg = error.response?.data?.error;
         if (errorMsg === "Already subscribed") {
           notify("info", "Already Subscribed", "You are already on the list!");
           setEmail("");
+          setIsSubscribed(true);
         } else {
           notify("error", "Subscription Failed", errorMsg || "Please try again.");
         }
@@ -42,24 +61,36 @@ const Footer = () => {
               on a budget without compromising on quality.
             </p>
 
-            {/* Newsletter Form */}
-            <form onSubmit={handleSubscribe} className="mb-6">
-              <h5 className="text-white text-xs font-bold uppercase tracking-widest mb-2">Don't Miss the Drop</h5>
-              <p className="text-gray-500 text-xs mb-3">Join the community for exclusive access.</p>
-              <div className="flex bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 focus-within:border-white transition-colors">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="bg-transparent text-white text-sm px-4 py-2 w-full focus:outline-none placeholder-gray-600"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <button type="submit" className="bg-white text-black px-4 py-2 hover:bg-gray-200 transition">
-                  <Mail size={16} />
-                </button>
+            {/* Newsletter Form / Subscribed State */}
+            {isSubscribed ? (
+              <div className="mb-6">
+                <h5 className="text-white text-xs font-bold uppercase tracking-widest mb-2">Don't Miss the Drop</h5>
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-lg px-4 py-2.5">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check size={12} strokeWidth={3} className="text-black" />
+                  </div>
+                  <span className="text-green-400 text-xs font-medium">You're subscribed!</span>
+                </div>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleSubscribe} className="mb-6">
+                <h5 className="text-white text-xs font-bold uppercase tracking-widest mb-2">Don't Miss the Drop</h5>
+                <p className="text-gray-500 text-xs mb-3">Join the community for exclusive access.</p>
+                <div className="flex bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 focus-within:border-white transition-colors">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="bg-transparent text-white text-sm px-4 py-2 w-full focus:outline-none placeholder-gray-600"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                  <button type="submit" className="bg-white text-black px-4 py-2 hover:bg-gray-200 transition">
+                    <Mail size={16} />
+                  </button>
+                </div>
+              </form>
+            )}
 
             <div className="flex space-x-4">
               <a

@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const axios = require('axios');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const User = require('../models/User');
 
 // GET ALL ORDERS
 router.get('/', async (req, res) => {
@@ -109,6 +111,7 @@ router.post('/', async (req, res) => {
 router.post('/cart', async (req, res) => {
     try {
         const { userId, paymentMethod, reference } = req.body;
+        console.log(`[Order] New Cart Checkout Request:`, { userId, paymentMethod, reference });
 
         if (!userId) {
             return res.status(400).json({ error: "User ID is required." });
@@ -117,8 +120,11 @@ router.post('/cart', async (req, res) => {
         const user = await User.findById(userId).populate('cart.product');
 
         if (!user) {
+            console.error(`[Order] User not found: ${userId}`);
             return res.status(404).json({ error: "User not found" });
         }
+
+        console.log(`[Order] Processing for User: ${user.email} | Method: ${paymentMethod}`);
 
         const cart = user.cart;
 
@@ -127,7 +133,14 @@ router.post('/cart', async (req, res) => {
         }
 
         // Build order items from populated cart
-        const orderItems = cart.map(item => ({
+        // Build order items from populated cart
+        const validCartItems = cart.filter(item => item.product);
+
+        if (validCartItems.length === 0) {
+            return res.status(400).json({ error: "Cart contains invalid or deleted items. Please refresh your cart." });
+        }
+
+        const orderItems = validCartItems.map(item => ({
             product: item.product._id,
             title: item.product.title,
             quantity: item.quantity,
@@ -136,16 +149,70 @@ router.post('/cart', async (req, res) => {
             color: item.selectedColor
         }));
 
-        const total = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        const SHIPPING_COST = Number(process.env.SHIPPING_FEE) || 2500;
+        const total = orderItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + SHIPPING_COST;
 
         // Payment Logic
+        console.log(`[Order] Total: ${total} | User Balance: ${user.balance}`);
+
         if (paymentMethod === 'wallet') {
             if (user.balance < total) {
+                console.warn(`[Order] Insufficient Funds. Required: ${total}, Available: ${user.balance}`);
                 return res.status(400).json({ error: "Insufficient funds" });
             }
             user.balance -= total;
+            console.log(`[Order] Wallet debited. New Balance: ${user.balance}`);
+        } else if (paymentMethod === 'paystack') {
+            console.log(`[Order] Starting Paystack Verification for Ref: ${reference}`);
+            if (!reference) {
+                return res.status(400).json({ error: "Payment reference is required for Paystack." });
+            }
+
+            // 1. Double-Funding Check (Ensure reference hasn't been used)
+            const existingRef = await User.findOne({ 'transactions.reference': reference });
+            if (existingRef) {
+                console.warn(`[Order] Duplicate Reference Found: ${reference}`);
+                return res.status(400).json({ error: "Duplicate Reference: This transaction has already been processed." });
+            }
+
+            // 2. Verify with Paystack API
+            try {
+                console.log(`[Order] Verifying with Paystack API...`);
+                const paystackRes = await axios.get(
+                    `https://api.paystack.co/transaction/verify/${reference}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY.trim()}`
+                        }
+                    }
+                );
+
+                const data = paystackRes.data.data;
+                console.log(`[Order] Paystack Response Status: ${data.status}`);
+
+                // 3. Status & Amount Verification
+                if (!paystackRes.data.status || data.status !== 'success') {
+                    console.warn(`[Order] Paystack Verification Failed: Status is ${data.status}`);
+                    return res.status(400).json({ error: "Payment verification failed: Transaction not successful." });
+                }
+
+                const paidAmount = data.amount / 100;
+                console.log(`[Order] Paid: ${paidAmount} | Expected: ${total}`);
+
+                if (Math.abs(paidAmount - total) > 0.01) { // Floating point safe check
+                    console.error(`[Order] Amount Mismatch! Paid: ${paidAmount}, Expected: ${total}`);
+                    return res.status(400).json({
+                        error: "Amount Mismatch: The amount paid does not match the order total.",
+                        paid: paidAmount,
+                        expected: total
+                    });
+                }
+                console.log(`[Order] Payment Verified Successfully!`);
+            } catch (err) {
+                console.error("Paystack Verification Error:", err.response?.data || err.message);
+                return res.status(500).json({ error: "Unable to verify payment with Paystack gateway." });
+            }
         }
-        // If paystack, payment already verified on frontend via callback
 
         const successfulUpdates = [];
 
@@ -176,6 +243,7 @@ router.post('/cart', async (req, res) => {
         const transaction = {
             type: 'purchase',
             amount: total,
+            status: 'SUCCESS',
             date: new Date(),
             items: orderItems,
             method: paymentMethod || 'wallet',
@@ -202,6 +270,7 @@ router.post('/cart', async (req, res) => {
 
         res.status(201).json(savedOrder);
     } catch (err) {
+        console.error("[Order] Finalization Error:", err);
         res.status(400).json({ error: err.message });
     }
 });

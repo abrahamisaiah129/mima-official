@@ -55,12 +55,12 @@ const OverviewTab = ({ stats, orders, products, users, setActiveTab }) => {
 
                             return (
                                 <div
-                                    key={order.id}
+                                    key={order._id || order.id}
                                     className="flex items-center justify-between p-4 bg-black/40 rounded-xl hover:bg-black/60 transition cursor-pointer group"
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white font-bold group-hover:bg-white group-hover:text-black transition-colors">
-                                            #{order.id.toString().slice(-3)}
+                                            #{(order.id || order._id || "").toString().slice(-3)}
                                         </div>
                                         <div>
                                             <p className="font-bold text-white">{customerName}</p>
@@ -94,7 +94,7 @@ const OverviewTab = ({ stats, orders, products, users, setActiveTab }) => {
                     <div className="space-y-4">
                         {products.slice(0, 4).map((product) => (
                             <div
-                                key={product.id}
+                                key={product._id || product.id}
                                 className="flex items-center gap-4 p-4 bg-black/40 rounded-xl hover:bg-black/60 transition cursor-pointer"
                             >
                                 <img

@@ -267,9 +267,9 @@ const Navbar = () => {
                           <div className="space-y-3">
                             {smartSearch(products, searchQuery)
                               .slice(0, 3)
-                              .map((product) => (
+                              .map((product, index) => (
                                 <Link
-                                  key={product.id}
+                                  key={product.id || product._id || index}
                                   to={`/product/${product.id}`}
                                   onClick={() => setSearchQuery("")} // Close on click
                                   className="flex items-center gap-3 group hover:bg-white/5 p-2 rounded-xl transition"

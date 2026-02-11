@@ -17,8 +17,10 @@ const categoryRoutes = require('./routes/categories');
 
 const passwordRoutes = require('./routes/password');
 const postRoutes = require('./routes/posts');
+const { verifyMailer } = require('./utils/mailer');
 
 const app = express();
+
 
 // Middleware
 app.use(cors());
@@ -38,6 +40,8 @@ const connectDB = async () => {
     }
 };
 connectDB();
+verifyMailer();
+
 
 // --- ROUTES MOUNTING ---
 app.use('/auth', authRoutes);

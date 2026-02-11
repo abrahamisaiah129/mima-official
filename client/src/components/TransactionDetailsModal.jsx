@@ -8,7 +8,8 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
         window.print();
     };
 
-    const isDeposit = transaction.type === "DEPOSIT";
+    const isDeposit = transaction.type?.toUpperCase() === "DEPOSIT";
+    const status = transaction.status || "SUCCESS";
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in print:bg-white print:static print:p-0 print:block">
@@ -62,17 +63,17 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
 
                     {/* Status Icon */}
                     <div className="flex justify-center mb-6 print:hidden">
-                        <div className={`w-20 h-20 rounded-full flex items-center justify-center ${transaction.status === "FAILED"
+                        <div className={`w-20 h-20 rounded-full flex items-center justify-center ${status === "FAILED"
                             ? "bg-red-500/10 text-red-500"
-                            : transaction.status === "PENDING"
+                            : status === "PENDING"
                                 ? "bg-yellow-500/10 text-yellow-500"
                                 : isDeposit
                                     ? "bg-green-500/10 text-green-500"
                                     : "bg-blue-500/10 text-blue-500"
                             }`}>
-                            {transaction.status === "FAILED" ? (
+                            {status === "FAILED" ? (
                                 <XCircle size={40} />
-                            ) : transaction.status === "PENDING" ? (
+                            ) : status === "PENDING" ? (
                                 <Clock size={40} />
                             ) : isDeposit ? (
                                 <ArrowDownLeft size={40} />
@@ -82,66 +83,64 @@ const TransactionDetailsModal = ({ transaction, onClose }) => {
                         </div>
                     </div>
 
-                    <h2 className={`text-4xl font-black mb-2 tracking-tight ${transaction.status === "FAILED" ? "text-red-500" : "text-white print:text-black"
+                    <h2 className={`text-4xl font-black mb-2 tracking-tight ${status === "FAILED" ? "text-red-500" : "text-white print:text-black"
                         }`}>
                         {isDeposit ? "+" : "-"}₦{transaction.amount.toLocaleString()}
                     </h2>
 
                     <p className="text-gray-500 text-sm font-bold uppercase tracking-widest mb-8">
-                        {transaction.status}
+                        {status}
                     </p>
 
                     <div className="space-y-4 bg-black/50 print:bg-gray-100/50 rounded-2xl p-6 text-left">
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500 text-sm">Description</span>
-                            <span className="text-white print:text-black font-medium text-sm text-right px-2">{transaction.description || "N/A"}</span>
+                            <span className="text-white print:text-black font-medium text-sm text-right px-2">
+                                {isDeposit ? "Wallet Top-up" : "Store Purchase"}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500 text-sm">Reference</span>
-                            <span className="text-white print:text-black font-mono text-sm">{transaction.reference || "N/A"}</span>
-                            {/* Item Details Table */}
-                            {transaction.items && transaction.items.length > 0 && (
-                                <div className="mt-8 mb-6">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-white/20 print:border-black/20 text-xs text-gray-400 uppercase tracking-widest">
-                                                <th className="py-2 print:text-black">Item</th>
-                                                <th className="py-2 text-center print:text-black">Qty</th>
-                                                <th className="py-2 text-right print:text-black">Price</th>
-                                                <th className="py-2 text-right print:text-black">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-sm font-medium text-white print:text-black">
-                                            {transaction.items.map((item, index) => (
-                                                <tr key={index} className="border-b border-white/5 print:border-black/5">
-                                                    <td className="py-3">{item.name}</td>
-                                                    <td className="py-3 text-center">{item.qty}</td>
-                                                    <td className="py-3 text-right">₦{item.price.toLocaleString()}</td>
-                                                    <td className="py-3 text-right">₦{(item.price * item.qty).toLocaleString()}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                        <tfoot>
-                                            <tr className="border-t-2 border-white/20 print:border-black/20 font-bold text-white print:text-black">
-                                                <td colSpan="3" className="py-4 text-right pr-4 uppercase tracking-wider text-xs">Total Amount</td>
-                                                <td className="py-4 text-right text-lg">₦{transaction.amount.toLocaleString()}</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            )}
+                            <span className="text-white print:text-black font-mono text-sm break-all pl-4 text-right">{transaction.reference || "N/A"}</span>
                         </div>
+
+                        {/* Item Details Table */}
+                        {transaction.items && transaction.items.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-white/10">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-white/20 print:border-black/20 text-[10px] text-gray-400 uppercase tracking-widest">
+                                            <th className="py-2 print:text-black">Item</th>
+                                            <th className="py-2 text-center print:text-black">Qty</th>
+                                            <th className="py-2 text-right print:text-black">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-xs font-medium text-white print:text-black">
+                                        {transaction.items.map((item, index) => (
+                                            <tr key={index} className="border-b border-white/5 print:border-black/5">
+                                                <td className="py-2">{item.title || item.name}</td>
+                                                <td className="py-2 text-center">{item.quantity || item.qty}</td>
+                                                <td className="py-2 text-right">₦{((item.price || 0) * (item.quantity || item.qty || 1)).toLocaleString()}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
                         <div className="flex justify-between items-center">
-                            <span className="text-gray-500 text-sm">Transaction ID</span>
-                            <span className="text-white print:text-black font-mono text-sm">#{transaction.id.toString().padStart(8, '0')}</span>
+                            <span className="text-gray-500 text-sm">Payment Method</span>
+                            <span className="text-white print:text-black font-bold text-sm uppercase">{transaction.method || "N/A"}</span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500 text-sm">Date</span>
-                            <span className="text-white print:text-black font-bold text-sm">{transaction.date}</span>
+                            <span className="text-white print:text-black font-bold text-sm">
+                                {new Date(transaction.date).toLocaleString()}
+                            </span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500 text-sm">Type</span>
-                            <span className="text-white print:text-black font-bold text-sm">{transaction.type}</span>
+                            <span className="text-white print:text-black font-bold text-sm uppercase">{transaction.type}</span>
                         </div>
                     </div>
                 </div>
