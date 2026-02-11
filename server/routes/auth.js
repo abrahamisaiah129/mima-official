@@ -172,7 +172,12 @@ router.delete('/:userId/wishlist/:productId', async (req, res) => {
 
         const realProductId = product._id.toString();
 
-        user.wishlist = user.wishlist.filter(id => id.toString() !== realProductId);
+        // Filter out the item safely
+        user.wishlist = user.wishlist.filter(id => {
+            if (!id) return false; // Filter out nulls
+            const strId = id._id ? id._id.toString() : id.toString();
+            return strId !== realProductId;
+        });
 
         await user.save();
         await user.populate('wishlist');
