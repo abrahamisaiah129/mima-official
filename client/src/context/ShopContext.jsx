@@ -71,7 +71,8 @@ export const ShopProvider = ({ children }) => {
         }
 
         const productId = product._id || product.id;
-        const exists = wishlistItems.some(item => (item._id || item) === productId || item.id === productId);
+        // Use loose equality (==) to handle string/number mismatches for legacy IDs
+        const exists = wishlistItems.some(item => (item._id || item) == productId || item.id == productId);
 
         try {
             if (exists) {
@@ -85,7 +86,7 @@ export const ShopProvider = ({ children }) => {
             }
         } catch (error) {
             console.error("Failed to toggle wishlist", error);
-            notify("error", "Error", "Failed to update wishlist.");
+            notify("error", "Error", error.response?.data?.message || "Failed to update wishlist.");
         }
     };
 

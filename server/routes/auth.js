@@ -131,7 +131,8 @@ router.post('/:userId/wishlist/:productId', async (req, res) => {
 
         const realProductId = product._id;
 
-        if (user.wishlist.includes(realProductId)) {
+        // Check if product is already in wishlist (compare as strings)
+        if (user.wishlist.some(id => id.toString() === realProductId.toString())) {
             return res.status(400).json({ message: 'Product already in wishlist' });
         }
 
