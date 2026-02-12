@@ -215,7 +215,7 @@ const OrdersTab = ({ orders, users, products, setOrders }) => {
                 return (
                     <div
                         key={order._id}
-                        className="flex items-center justify-between p-6 bg-zinc-900 border border-white/10 rounded-2xl cursor-pointer hover:border-white/30 transition"
+                        className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 bg-zinc-900 border border-white/10 rounded-2xl cursor-pointer hover:border-white/30 transition gap-4 md:gap-0"
                         onClick={() => {
                             setSelectedOrder(order);
                             setIsOrderModalOpen(true);

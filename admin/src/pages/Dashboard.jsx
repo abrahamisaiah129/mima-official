@@ -210,7 +210,7 @@ const Dashboard = () => {
             </aside>
 
             {/* 2. Main Content */}
-            <main className="flex-1 p-8 w-full overflow-x-hidden h-screen overflow-y-auto relative">
+            <main className="flex-1 p-4 md:p-8 w-full overflow-x-hidden h-screen overflow-y-auto relative">
                 {/* Header with Hamburger */}
                 <div className="flex justify-between items-center mb-10">
                     <div className="flex items-center gap-4">

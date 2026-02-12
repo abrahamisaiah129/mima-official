@@ -200,7 +200,7 @@ const ProductsTab = ({ products, setProducts }) => {
                 </button>
             </div>
 
-            <div className="bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden">
+            <div className="bg-zinc-900 border border-white/10 rounded-3xl overflow-hidden overflow-x-auto">
                 <table className="w-full text-left">
                     <thead className="bg-black/40 text-gray-400 font-bold uppercase text-xs tracking-wider">
                         <tr>

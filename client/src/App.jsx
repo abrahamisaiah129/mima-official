@@ -42,7 +42,7 @@ function App() {
             <div className="min-h-screen flex flex-col bg-black font-sans text-white">
               <Navbar />
 
-              <main className="grow pt-48 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+              <main className="grow pt-40 md:pt-48 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/shop" element={<Shop />} />

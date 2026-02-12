@@ -80,7 +80,7 @@ const HeroSlider = () => {
   };
 
   return (
-    <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden rounded-[2.5rem] shadow-2xl mb-16 border border-white/10 group bg-black">
+    <section className="relative w-full h-[450px] md:h-[700px] overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-2xl mb-10 md:mb-16 border border-white/10 group bg-black">
       {/* Slides */}
       {slides.map((slide, index) => (
         <div

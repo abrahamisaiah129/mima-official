@@ -70,7 +70,7 @@ const CustomersTab = ({ users, subscribers, refreshData }) => {
                         </div>
                         <button
                             onClick={(e) => { e.stopPropagation(); setSelectedUser(user); setShowDeleteConfirm(true); }}
-                            className="p-2 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100"
+                            className="p-2 bg-red-500/10 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition opacity-100 md:opacity-0 md:group-hover:opacity-100"
                             title="Delete User"
                         >
                             <Trash2 size={16} />
