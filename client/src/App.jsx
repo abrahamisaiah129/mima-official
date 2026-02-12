@@ -19,6 +19,7 @@ import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 
 import TrackOrder from "./pages/TrackOrder";
+import OrderDetails from "./pages/OrderDetails";
 import APIDocs from "./pages/APIDocs";
 
 // import { profile } from "./data/profile"; // Import profile data
@@ -62,6 +63,7 @@ function App() {
                   <Route path="/register" element={<RegisterForm />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/track-order" element={<TrackOrder />} />
+                  <Route path="/order/:id" element={<OrderDetails />} />
                   <Route path="/api-docs" element={<APIDocs />} />
 
 

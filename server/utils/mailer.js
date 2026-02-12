@@ -143,11 +143,124 @@ const sendWelcomeEmail = async (email) => {
     });
 };
 
+/**
+ * Send Order Confirmation Email
+ */
+const sendOrderConfirmation = async (email, order) => {
+    const itemsList = order.items.map(item => `
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.title} ${item.size ? `(${item.size})` : ''}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
+        </tr>
+    `).join('');
+
+    const sd = order.shippingDetails || {};
+    const shippingAddress = (sd.address && sd.firstName) ? `
+        <div style="margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <h3 style="margin-top: 0; font-size: 16px;">Shipping Details</h3>
+            <p style="margin: 0; color: #555;">
+                ${sd.firstName || ''} ${sd.lastName || ''}<br>
+                ${sd.address || ''}<br>
+                ${sd.city || ''}, ${sd.state || ''}<br>
+                ${sd.phone || ''}
+            </p>
+        </div>
+    ` : '';
+
+    return sendMail({
+        to: email,
+        subject: `Order Confirmation #${order._id.toString().slice(-6).toUpperCase()} - MIMA`,
+        html: `
+            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <div style="background-color: #000; padding: 30px; text-align: center;">
+                    <h1 style="color: #fff; margin: 0; letter-spacing: 5px;">MIMA</h1>
+                </div>
+                
+                <div style="padding: 30px;">
+                    <h2 style="text-align: center; margin-bottom: 30px;">Order Confirmed</h2>
+                    <p>Thank you for your order. We've received it and are preparing it for shipment.</p>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <strong>Order ID:</strong> #${order._id.toString().toUpperCase()}<br>
+                        <strong>Date:</strong> ${new Date().toLocaleDateString()}
+                    </div>
+
+                    ${shippingAddress}
+
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                        <thead>
+                            <tr style="background-color: #f4f4f4;">
+                                <th style="padding: 10px; text-align: left;">Item</th>
+                                <th style="padding: 10px; text-align: center;">Qty</th>
+                                <th style="padding: 10px; text-align: right;">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsList}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="2" style="padding: 10px; text-align: right; font-weight: bold;">Total</td>
+                                <td style="padding: 10px; text-align: right; font-weight: bold;">₦${order.total.toLocaleString()}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div style="text-align: center; margin-top: 40px;">
+                        <a href="${process.env.CLIENT_URL || 'https://mima-store.vercel.app'}/order/${order._id}" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Order Details</a>
+                    </div>
+                </div>
+
+                <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #888;">
+                    <p>&copy; ${new Date().getFullYear()} MIMA Store. All rights reserved.</p>
+                </div>
+            </div>
+        `
+    });
+};
+
+/**
+ * Send Order Cancellation Email
+ */
+const sendOrderCancellation = async (email, order) => {
+    return sendMail({
+        to: email,
+        subject: `Order Cancelled #${order._id.toString().slice(-6).toUpperCase()} - MIMA`,
+        html: `
+            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                <div style="background-color: #000; padding: 30px; text-align: center;">
+                    <h1 style="color: #fff; margin: 0; letter-spacing: 5px;">MIMA</h1>
+                </div>
+                
+                <div style="padding: 30px; text-align: center;">
+                    <h2 style="margin-bottom: 20px; color: #d32f2f;">Order Cancelled</h2>
+                    <p>Your order <strong>#${order._id.toString().toUpperCase()}</strong> has been cancelled as requested.</p>
+                    
+                    ${order.paymentMethod === 'wallet' ? '<p style="margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-radius: 8px; color: #2e7d32; font-weight: bold;">Refuded to your Wallet.</p>' : ''}
+                    
+                    <p style="margin-top: 30px; font-size: 14px; color: #666;">If you did not request this cancellation, please contact support immediately.</p>
+                    
+                    <div style="margin-top: 40px;">
+                        <a href="${process.env.CLIENT_URL || 'https://mima-store.vercel.app'}/shop" style="background-color: #000; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 4px; font-weight: bold;">Continue Shopping</a>
+                    </div>
+                </div>
+
+                <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #888;">
+                    <p>&copy; ${new Date().getFullYear()} MIMA Store. All rights reserved.</p>
+                </div>
+            </div>
+        `
+    });
+};
+
 module.exports = {
     transporter,
     verifyMailer,
     sendMail,
     sendOTP,
     sendNewsletter,
-    sendWelcomeEmail
+    sendWelcomeEmail,
+    sendOrderConfirmation,
+    sendOrderCancellation
 };

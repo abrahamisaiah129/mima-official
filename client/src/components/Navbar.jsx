@@ -113,6 +113,13 @@ const Home = (props) => (
   </IconWrapper>
 );
 
+const ArrowRight = (props) => (
+  <IconWrapper {...props}>
+    <path d="M5 12h14" />
+    <path d="m12 5 7 7-7 7" />
+  </IconWrapper>
+);
+
 // import { profile } from "../data/profile";
 
 const Navbar = () => {

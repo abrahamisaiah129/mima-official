@@ -4,6 +4,7 @@ const axios = require('axios');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const { sendOrderConfirmation } = require('../utils/mailer');
 
 // GET ALL ORDERS
 router.get('/', async (req, res) => {
@@ -100,6 +101,13 @@ router.post('/', async (req, res) => {
         // 3. Create Order
         const newOrder = new Order(req.body); // Ensure req.body has id, user_id, items, total, etc.
         const savedOrder = await newOrder.save();
+
+        // Send Confirmation Email
+        try {
+            await sendOrderConfirmation(user.email, savedOrder);
+        } catch (emailErr) {
+            console.error("Failed to send order confirmation email:", emailErr);
+        }
 
         res.status(201).json(savedOrder);
     } catch (err) {
@@ -265,10 +273,18 @@ router.post('/cart', async (req, res) => {
 
         const savedOrder = await newOrder.save();
 
+        // Send Confirmation Email (Async)
+        try {
+            await sendOrderConfirmation(user.email, savedOrder);
+        } catch (emailErr) {
+            console.error("Failed to send order confirmation email:", emailErr);
+        }
+
         user.cart = [];
         await user.save();
 
         res.status(201).json(savedOrder);
+
     } catch (err) {
         console.error("[Order] Finalization Error:", err);
         res.status(400).json({ error: err.message });
@@ -289,6 +305,70 @@ router.patch('/:id/status', async (req, res) => {
         res.json(updatedOrder);
     } catch (err) {
         res.status(400).json({ error: err.message });
+    }
+});
+
+// CANCEL ORDER
+router.put('/:id/cancel', async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: "Order not found" });
+
+        // Check if order can be cancelled
+        const cancellableStatuses = ['Pending', 'Processing', 'pending', 'processing'];
+        if (!cancellableStatuses.includes(order.status)) {
+            return res.status(400).json({ error: "Order cannot be cancelled at this stage." });
+        }
+
+        // Update status
+        order.status = 'Cancelled';
+        await order.save();
+
+        // Optional: Restore Stock (Simple version)
+        // In a real app, you might want to loop through items and $inc stock on Product model
+        if (order.items && Array.isArray(order.items)) {
+            for (const item of order.items) {
+                await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+            }
+        }
+
+        // If money was deducted (Wallet), refund it
+        if (order.paymentMethod === 'wallet' && order.paymentStatus === 'Paid') {
+            const user = await User.findById(order.user);
+            if (user) {
+                user.balance += order.total;
+                user.transactions.push({
+                    type: 'refund',
+                    amount: order.total,
+                    date: new Date(),
+                    reference: `REF-${order._id}`,
+                    status: 'SUCCESS'
+                });
+                await user.save();
+            }
+        } // End if wallet payment
+
+        // Send Cancellation Email
+        try {
+            // Need to fetch user email if not in order object (it should be there based on schema)
+            let email = order.email;
+            if (!email && order.user) {
+                const userDoc = await User.findById(order.user);
+                email = userDoc ? userDoc.email : null;
+            }
+
+            if (email) {
+                const { sendOrderCancellation } = require('../utils/mailer');
+                await sendOrderCancellation(email, order);
+            }
+        } catch (emailErr) {
+            console.error("Failed to send cancellation email:", emailErr);
+        }
+
+        res.json({ message: "Order cancelled successfully", order });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

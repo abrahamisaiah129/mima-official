@@ -1,9 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Package, ChevronRight, CheckCircle, Clock } from "lucide-react";
 
 import { useUser } from "../context/UserContext";
 
 const OrderHistory = () => {
+  const navigate = useNavigate();
   const { user } = useUser();
   const orders = user?.orderHistory || [];
 
@@ -19,6 +21,7 @@ const OrderHistory = () => {
         {orders.map((order) => (
           <div
             key={order.id}
+            onClick={() => navigate(`/order/${order._id || order.id}`)}
             className="p-6 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-gray-50 transition cursor-pointer group"
           >
             <div className="flex items-start space-x-4 mb-4 sm:mb-0">

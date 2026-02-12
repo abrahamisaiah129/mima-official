@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Search, Package, MapPin, Truck, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import api from "../api";
@@ -19,6 +20,7 @@ const generateSteps = (order) => {
 };
 
 const TrackOrder = () => {
+  const navigate = useNavigate();
   const { user } = useUser();
   const [orderId, setOrderId] = useState("");
   const [trackingData, setTrackingData] = useState(null);
@@ -109,7 +111,7 @@ const TrackOrder = () => {
                 {userOrders.map((order) => (
                   <div
                     key={order._id || order.id}
-                    onClick={() => viewOrder(order)}
+                    onClick={() => navigate(`/order/${order._id || order.id}`)}
                     className="bg-zinc-900 border border-white/10 p-6 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-zinc-800 transition group"
                   >
                     <div className="flex items-center gap-4">
