@@ -11,17 +11,14 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.get("/admins");
-            const admins = res.data;
+            const res = await api.post("/auth/login", { email, password });
+            const { token } = res.data;
 
-            const user = admins.find(u => u.email === email && u.password === password);
-
-            if (user) {
-                // Ideally set token/session, but for now just navigate
+            if (token) {
+                localStorage.setItem("MIMA_ADMIN_TOKEN", token);
                 navigate("/dashboard");
             } else {
-                // For demo purposes, hint the credentials if failed
-                alert("Invalid Credentials. (Try: admin@mima.store / password123)");
+                alert("Login Failed. No token received.");
             }
         } catch (error) {
             console.error("Login Error", error);
@@ -56,7 +53,7 @@ const Login = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:border-white transition-colors outline-none"
-                                placeholder="admin@mima.store"
+                                placeholder="abrahamisaiah129@gmail.com"
                             />
                             <User
                                 size={18}
