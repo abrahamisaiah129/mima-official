@@ -48,7 +48,7 @@ const Card = ({
 
   // Check if item is in cart
   const isInCart = cartItems.some(item =>
-    item.id === id &&
+    item.id == id &&
     item.selectedSize === selectedSize &&
     item.selectedColor === selectedColor
   );

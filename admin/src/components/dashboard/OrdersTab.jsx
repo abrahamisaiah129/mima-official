@@ -360,18 +360,32 @@ const OrdersTab = ({ orders, users, products, setOrders }) => {
                                     <span className="text-gray-500 text-sm">Email</span>
                                     <span className="text-white print:text-black font-mono text-sm">{selectedOrder.email}</span>
                                 </div>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-gray-500 text-sm">Phone</span>
-                                    <span className="text-white print:text-black font-mono text-sm">{selectedOrder.shippingDetails?.phone || "N/A"}</span>
-                                </div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-gray-500 text-sm">Address</span>
-                                    <span className="text-white print:text-black font-medium text-sm text-right px-2 max-w-[200px]">
-                                        {selectedOrder.shippingDetails?.address ?
-                                            `${selectedOrder.shippingDetails.address}, ${selectedOrder.shippingDetails.city || ''}, ${selectedOrder.shippingDetails.state || ''}`
-                                            : "N/A"}
-                                    </span>
-                                </div>
+                                {(() => {
+                                    // Resolve User for Fallback
+                                    const orderUser = users.find(u =>
+                                        (selectedOrder.user && (u._id === selectedOrder.user || u._id === selectedOrder.user.toString())) ||
+                                        (selectedOrder.email && u.email === selectedOrder.email)
+                                    );
+                                    const phone = selectedOrder.shippingDetails?.phone || (orderUser ? orderUser.phone : 'N/A');
+                                    const address = selectedOrder.shippingDetails?.address ?
+                                        `${selectedOrder.shippingDetails.address}, ${selectedOrder.shippingDetails.city || ''}, ${selectedOrder.shippingDetails.state || ''}`
+                                        : (orderUser?.address || "N/A");
+
+                                    return (
+                                        <>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-gray-500 text-sm">Phone</span>
+                                                <span className="text-white print:text-black font-mono text-sm">{phone}</span>
+                                            </div>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <span className="text-gray-500 text-sm">Address</span>
+                                                <span className="text-white print:text-black font-medium text-sm text-right px-2 max-w-[200px]">
+                                                    {address}
+                                                </span>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
 
                                 {/* Items Table */}
                                 <div className="mt-6 mb-4">

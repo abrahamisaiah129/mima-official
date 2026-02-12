@@ -32,7 +32,8 @@ const ProductDetails = () => {
 
   useEffect(() => {
     const fetchProductDetails = async () => {
-      let productData = products.find((p) => p.id === parseInt(id));
+      // Use loose equality to match ID regardless of type (string/number)
+      let productData = products.find((p) => p.id == id);
       if (!productData) {
         try {
           const res = await api.get(`/products/${id}`);
@@ -67,7 +68,7 @@ const ProductDetails = () => {
 
   // Check if item is in cart
   const isInCart = product ? cartItems.some(item =>
-    item.id === product.id &&
+    item.id == product.id &&
     item.selectedSize === selectedSize &&
     item.selectedColor === selectedColor
   ) : false;

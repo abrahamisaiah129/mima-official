@@ -16,8 +16,7 @@ const Profile = () => {
     firstName: "",
     lastName: "",
     phone: "",
-    address: "",
-    isSubscribed: false
+    address: ""
   });
 
   useEffect(() => {
@@ -26,11 +25,53 @@ const Profile = () => {
         firstName: user.firstName || "",
         lastName: user.lastName || "",
         phone: user.phone || "",
-        address: user.address || "",
-        isSubscribed: user.isSubscribed || false
+        address: user.address || ""
       });
     }
   }, [user]);
+
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isTogglingSub, setIsTogglingSub] = useState(false);
+
+  // Fetch Newsletter Status
+  useEffect(() => {
+    if (user?.email) {
+      import("../api").then(module => {
+        const api = module.default;
+        api.get("/newsletters")
+          .then((res) => {
+            if (Array.isArray(res.data)) {
+              setIsSubscribed(res.data.includes(user.email));
+            }
+          })
+          .catch(err => console.error("Failed to check subscription", err));
+      });
+    }
+  }, [user]);
+
+  const handleNewsletterToggle = async () => {
+    if (isTogglingSub || !user?.email) return;
+    setIsTogglingSub(true);
+
+    try {
+      const api = (await import("../api")).default;
+
+      if (isSubscribed) {
+        await api.delete("/newsletters", { data: { email: user.email } });
+        setIsSubscribed(false);
+        notify("success", "Unsubscribed", "You have been removed from the newsletter.");
+      } else {
+        await api.post("/newsletter", { email: user.email });
+        setIsSubscribed(true);
+        notify("success", "Subscribed", "You have joined the newsletter!");
+      }
+    } catch (error) {
+      console.error("Newsletter toggle error", error);
+      notify("error", "Error", error.response?.data?.error || "Failed to update subscription");
+    } finally {
+      setIsTogglingSub(false);
+    }
+  };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -224,14 +265,14 @@ const Profile = () => {
             </label>
             <div className="relative">
               <div
-                onClick={() => setFormData({ ...formData, isSubscribed: !formData.isSubscribed })}
-                className="flex items-center space-x-3 w-full pl-4 pr-4 py-3 bg-black border border-white/10 rounded-xl cursor-pointer hover:bg-zinc-900 transition-colors select-none"
+                onClick={handleNewsletterToggle}
+                className={`flex items-center space-x-3 w-full pl-4 pr-4 py-3 bg-black border border-white/10 rounded-xl cursor-pointer hover:bg-zinc-900 transition-colors select-none ${isTogglingSub ? 'opacity-50 pointer-events-none' : ''}`}
               >
-                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.isSubscribed ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
-                  {formData.isSubscribed && <Check size={14} className="text-black stroke-3" />}
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSubscribed ? 'bg-green-500 border-green-500' : 'border-gray-500'}`}>
+                  {isSubscribed && <Check size={14} className="text-black stroke-3" />}
                 </div>
                 <span className="text-white font-bold">
-                  {formData.isSubscribed ? "Subscribed to Don't Miss the Drop" : "Not Subscribed"}
+                  {isSubscribed ? "Subscribed to MIMA Drop" : "Not Subscribed"}
                 </span>
               </div>
             </div>

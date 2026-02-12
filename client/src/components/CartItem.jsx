@@ -1,17 +1,19 @@
-import React from "react";
+import { Link } from "react-router-dom";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
 const CartItem = ({ item, removeFromCart, updateQuantity }) => {
   return (
     <div className="flex flex-row items-start bg-transparent sm:bg-white p-0 sm:p-4 rounded-none sm:rounded-2xl border-b border-gray-100 sm:border sm:border-gray-100 sm:shadow-sm relative gap-4 transition-all">
-      {/* Product Image */}
-      <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100">
-        <img
-          src={item.imageSrc}
-          alt={item.title}
-          className="w-full h-full object-cover"
-        />
-      </div>
+      {/* Product Image - Clickable */}
+      <Link to={`/product/${item.id}`} className="block flex-shrink-0">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-xl overflow-hidden border border-gray-100">
+          <img
+            src={item.imageSrc}
+            alt={item.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </Link>
 
       {/* Content Container */}
       <div className="flex flex-col flex-1 h-full min-h-[6rem] justify-between">
@@ -19,7 +21,7 @@ const CartItem = ({ item, removeFromCart, updateQuantity }) => {
         {/* Top: Title & Price */}
         <div className="flex justify-between items-start w-full mb-1">
           <div className="pr-2">
-            <h3 className="text-sm sm:text-lg font-bold text-white line-clamp-2 leading-tight">
+            <h3 className="text-sm sm:text-lg font-bold text-white sm:text-slate-900 line-clamp-2 leading-tight">
               {item.title}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs sm:text-sm text-gray-500 font-medium">

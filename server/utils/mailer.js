@@ -99,10 +99,55 @@ const sendNewsletter = async (recipientEmails, subject, message) => {
     });
 };
 
+/**
+ * Send Welcome Email
+ */
+const sendWelcomeEmail = async (email) => {
+    return sendMail({
+        to: email,
+        subject: "Welcome to MIMA! 🖤",
+        html: `
+            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; color: #000000;">
+                
+                <!-- Header -->
+                <div style="background-color: #000000; padding: 40px 20px; text-align: center;">
+                    <h1 style="color: #ffffff; letter-spacing: 8px; margin: 0; font-size: 24px;">MIMA</h1>
+                </div>
+
+                <!-- Content -->
+                <div style="padding: 40px 20px; text-align: center;">
+                    <h2 style="text-transform: uppercase; letter-spacing: 2px; font-size: 20px; margin-bottom: 20px;">You're on the list.</h2>
+                    <p style="font-size: 16px; line-height: 1.6; color: #333333; margin-bottom: 30px;">
+                        Welcome to the MIMA community. You are now first in line for:
+                    </p>
+                    
+                    <ul style="list-style: none; padding: 0; margin-bottom: 40px; text-align: left; display: inline-block;">
+                        <li style="margin-bottom: 10px; font-size: 14px;">Running exclusive drops before anyone else.</li>
+                        <li style="margin-bottom: 10px; font-size: 14px;">Flash sales and limited-time offers.</li>
+                        <li style="margin-bottom: 10px; font-size: 14px;">Behind-the-scenes content.</li>
+                    </ul>
+
+                    <br/>
+                    <a href="https://mima-store.vercel.app/shop" style="background-color: #000000; color: #ffffff; padding: 15px 30px; text-decoration: none; text-transform: uppercase; font-weight: bold; font-size: 12px; letter-spacing: 2px; display: inline-block;">
+                        Shop New Arrivals
+                    </a>
+                </div>
+
+                <!-- Footer -->
+                <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #888888;">
+                    <p>&copy; ${new Date().getFullYear()} MIMA Store. All rights reserved.</p>
+                    <p>Lagos, Nigeria</p>
+                </div>
+            </div>
+        `
+    });
+};
+
 module.exports = {
     transporter,
     verifyMailer,
     sendMail,
     sendOTP,
-    sendNewsletter
+    sendNewsletter,
+    sendWelcomeEmail
 };
