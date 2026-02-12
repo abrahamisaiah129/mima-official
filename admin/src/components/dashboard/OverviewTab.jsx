@@ -58,16 +58,16 @@ const OverviewTab = ({ stats, orders, products, users, setActiveTab }) => {
                                     key={order._id || order.id}
                                     className="flex items-center justify-between p-4 bg-black/40 rounded-xl hover:bg-black/60 transition cursor-pointer group"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white font-bold group-hover:bg-white group-hover:text-black transition-colors">
+                                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                                        <div className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white font-bold group-hover:bg-white group-hover:text-black transition-colors shrink-0">
                                             #{(order.id || order._id || "").toString().slice(-3)}
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-white">{customerName}</p>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-white truncate">{customerName}</p>
                                             <p className="text-xs text-gray-500">{order.date}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-right shrink-0 ml-4">
                                         <p className="font-bold text-white">₦{order.total.toLocaleString()}</p>
                                         <span
                                             className={`text-[10px] font-bold px-2 py-1 rounded-full ${order.status === "Delivered" ? "bg-green-500/10 text-green-500" :
@@ -100,13 +100,13 @@ const OverviewTab = ({ stats, orders, products, users, setActiveTab }) => {
                                 <img
                                     src={product.imageSrc}
                                     alt={product.title}
-                                    className="w-12 h-12 rounded-lg object-cover bg-gray-800"
+                                    className="w-12 h-12 rounded-lg object-cover bg-gray-800 shrink-0"
                                 />
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                     <p className="font-bold text-white truncate">{product.title}</p>
                                     <p className="text-xs text-gray-500">{product.category}</p>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right shrink-0">
                                     <p className="font-bold text-white">₦{product.price.toLocaleString()}</p>
                                     <p className="text-xs text-gray-500">{product.stock || 15} Stock</p>
                                 </div>
